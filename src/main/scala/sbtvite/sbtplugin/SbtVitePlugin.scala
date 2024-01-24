@@ -3,9 +3,9 @@ package sbtvite.sbtplugin
 import org.scalajs.jsenv.Input
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.*
-import sbt.*
-import sbt.Keys.*
-import sbt.nio.Keys.{fileInputs, fileOutputs}
+import sbt._
+import sbt.Keys._
+import sbt.nio.Keys._
 import sbtvite.ViteConfigGen
 
 import java.nio.file.{InvalidPathException, Path}
@@ -22,7 +22,7 @@ object SbtVitePlugin extends AutoPlugin {
     lazy val testViteConfigPath = settingKey[Path]("Path of vite configuration used to bundle tests")
     lazy val viteConfigSources = settingKey[Seq[Path]]("Paths of vite configuration files for overriding default vite test configuration")
 
-    lazy val generateViteTestConfig = taskKey[Unit]("Generate vite configuration for bundling " +
+    lazy val generateViteConfig = taskKey[Unit]("Generate vite configuration for bundling " +
 	  "test JS sources into executable test script")
     lazy val bundleJS = taskKey[Unit]("Run vite on test JS sources to generate an executable " +
 	  "test script")
@@ -40,12 +40,12 @@ object SbtVitePlugin extends AutoPlugin {
     Test / testViteConfigPath := target.value.toPath / "vite-configs" / s"vite.config-test-${name
 	  .value}.js",
     Test / viteConfigSources := Seq.empty,
-    (Test / generateViteTestConfig) / fileInputs += {
+    Test / generateViteConfig / fileInputs += {
       (Test / fastLinkJS / scalaJSLinkerOutputDirectory).value.toPath.toString + "/*.js"
     },
-    Test / generateViteTestConfig := {
+    Test / generateViteConfig := {
        // Only generate a new test config if something has changed
-       if ((Test / generateViteTestConfig).inputFileChanges.hasChanges) {
+       if ((Test / generateViteConfig).inputFileChanges.hasChanges) {
           val rootDirPath = file(".").toPath.toAbsolutePath
           val linkOutputDir = (Test / fastLinkJS / scalaJSLinkerOutputDirectory).value.toPath
 																				.toAbsolutePath
@@ -64,20 +64,19 @@ object SbtVitePlugin extends AutoPlugin {
           IO.write(configPath.toFile, configString)
        } else {}
     },
-    (Test / generateViteTestConfig) / fileOutputs ++= Seq(
-       (Test / testViteConfigPath).value.toString,
-       (Test / fastLinkJS / scalaJSLinkerOutputDirectory).value.toPath.toString + "/*.js",
+    Test / generateViteConfig := ((Test / generateViteConfig) dependsOn (Test / fastLinkJS)).value,
+    Test / bundleJS / fileInputs ++= Seq(
+      (Test / testViteConfigPath).value.toString,
+      (Test / fastLinkJS / scalaJSLinkerOutputDirectory).value.toPath.toString + "/*.js",
     ),
-    Test / generateViteTestConfig := ((Test / generateViteTestConfig) dependsOn (Test / fastLinkJS)).value,
     Test / bundleJS := {
        // Only bundle if there is a new configuration, there are new test compilation outputs
        // or the bundled output is missing
-       if (
-           true
-//           (Test / generateViteTestConfig).outputFileChanges.hasChanges
-//             || Try(IO.read(((Test / testBundleDirectory).value / "main.js").toFile)).isFailure
-       ) {
-         (Test / generateViteTestConfig).value
+       if ( {
+           (Test / bundleJS).inputFileChanges.hasChanges
+       } || {
+           Try(IO.read(((Test / testBundleDirectory).value / "main.js").toFile)).isFailure
+       }) {
          val configPath = (Test / testViteConfigPath).value.toString
           import scala.sys.process.*
           val command = s"vite build -c $configPath --mode=development"
@@ -88,8 +87,10 @@ object SbtVitePlugin extends AutoPlugin {
              throw new MessageOnlyException("Vite failed to build test bundle")
        } else {}
     },
+    Test / bundleJS := ((Test / bundleJS) dependsOn (Test / generateViteConfig)).value,
     // Make sure test scripts are bundled before running
     Test / test := ((Test / test) dependsOn (Test / bundleJS)).value,
+
   )
 
   override lazy val buildSettings = Seq()

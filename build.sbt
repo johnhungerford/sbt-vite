@@ -1,9 +1,11 @@
 
 name := """sbt-vite"""
 organization := "org.hungerford"
-version := "0.1"
+version := "0.1-SNAPSHOT"
 
 sbtPlugin := true
+
+scalaVersion := "2.12.17"
 
 // choose a test framework
 
@@ -37,7 +39,7 @@ inThisBuild(List(
 
 console / initialCommands := """import sbtvite._"""
 
-enablePlugins(SbtPlugin, ScriptedPlugin)
+enablePlugins(ScriptedPlugin)
 // set up 'scripted; sbt plugin for testing sbt plugins
 scriptedLaunchOpts ++=
   Seq("-Xmx1024M", "-Dvite.plugin.version=" + version.value)
