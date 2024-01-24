@@ -4,9 +4,38 @@ import sbt.io.Path
 
 import scala.util.{Failure, Success, Try}
 
+/**
+ * Generate a vite configuration file for bundling test scripts. Currently does
+ * simple string concatenation to generate a JS file. As complexity increases, this
+ * will have to be replaced with some proper codegen solution.
+ */
 object ViteConfigGen {
-	final case class ValidationError(message: String)
 
+	/**
+	 * Generates a vite configuration file (in the form of a string), which is itself
+	 * and executable JavaScript file that defines and exports a configuration object.
+	 *
+	 * To customize the configuration, one or more `sourcePath`s can pe provided, which
+	 * must point to other JavaScript files. These are expected to provide a default
+	 * export of either a vite `UserConfig` object, or a function that consumes a
+	 * vite `ConfigEnv` object and returns a `UserConfig`. They should not call `defineConfig`
+	 * as this is done in the merged script.
+	 *
+	 * The generated script will import all of the sources, generate and merge their
+	 * configurations, and then ensure that the final configuration is pointing to the correct
+	 * locations for consuming Scala.js JS outputs and generating bundles. These values cannot
+	 * be manually overridden.
+	 *
+	 * @param sourcePaths paths of custom vite configuration scripts. These must export a
+	 *                    configuration or a function from `UserConfig` to a configuration.
+	 *                    They will be merged or overwrite each other from "left to right".
+	 *                    In other words, subsequent files will take precedence.
+	 * @param rootDirPath the base directory that vite will use to resolve inputs
+	 * @param inputPath   the path, relative to rootDirPath, of the JS entrypoint to be bundled
+	 * @param outDirPath  the absolute path (or relative to the CWD when executing vite) where
+	 *                    vite will output bundled artifacts
+	 * @return Left if any of the four inputs are invalid, right with the generated JS string if not
+	 */
 	def generate(
 		sourcePaths: List[String],
 		rootDirPath: String,
@@ -14,11 +43,11 @@ object ViteConfigGen {
 		outDirPath: String,
 	): Either[ValidationError, String] =
 		for {
-			_ <- validateSourcePath(rootDirPath).toLeft(())
-			_ <- validateSourcePath(inputPath).toLeft(())
-			_ <- validateSourcePath(outDirPath).toLeft(())
+			_ <- validatePathForJSInjection(rootDirPath).toLeft(())
+			_ <- validatePathForJSInjection(inputPath).toLeft(())
+			_ <- validatePathForJSInjection(outDirPath).toLeft(())
 			_ <- sourcePaths.foldLeft[Either[ValidationError, Unit]](Right()) { (currentEither, nextPath) =>
-				currentEither.flatMap(_ => validateSourcePath(nextPath).toLeft(()))
+				currentEither.flatMap(_ => validatePathForJSInjection(nextPath).toLeft(()))
 			}
 		} yield combineAll(
 			requiredImports ++ generateImportStatements(sourcePaths),
@@ -28,7 +57,17 @@ object ViteConfigGen {
 			outDirPath,
 		)
 
-	private def validateSourcePath(path: String): Option[ValidationError] =
+	final case class ValidationError(message: String)
+
+	/**
+	 * Ensures that paths (currently, the only kind of input for code gen) are both
+	 * valid paths and do contain obvious tokens for injecting scripts (e.g., newlines,
+	 * line-delimiting semicolons, or quotes).
+	 *
+	 * @param path a path that will injected into a JS script
+	 * @return
+	 */
+	private def validatePathForJSInjection(path: String): Option[ValidationError] =
 		Try(java.nio.file.Path.of(path)) match {
 			case Failure(exception) =>
 				Some(ValidationError(
