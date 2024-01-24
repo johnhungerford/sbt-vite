@@ -81,11 +81,6 @@ object ViteConfigGen {
 		   |    sourcemap: true,
 		   |    rollupOptions: {
 		   |      treeshake: false,
-		   |      output: {
-		   |        entryFileNames: `[name].js`,
-		   |        chunkFileNames: `[name].js`,
-		   |        assetFileNames: `[name].[ext]`,
-		   |      },
 		   |      plugins: [sourcemaps()],
 		   |    },
 		   |  },
@@ -97,9 +92,10 @@ object ViteConfigGen {
 		   |    rollupOptions: {
 		   |      input: $inputPath,
 		   |      output: {
+		   |      	entryFileNames: `[name].js`,
 		   |        dir: $outputDirPath,
-		   |      }
-		   |    }
+		   |      },
+		   |    },
 		   |  },
 		   |}
 		   |
