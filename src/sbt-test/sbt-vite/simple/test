@@ -1,1 +1,3 @@
-> show exampleTask
+> Test / generateViteTestConfig
+> Test / bundleJS
+> Test / test

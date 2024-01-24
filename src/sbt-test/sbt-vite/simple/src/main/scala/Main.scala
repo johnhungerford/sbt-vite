@@ -11,7 +11,7 @@ class Main {
 object Main {
 
   val constant = 1
-  def function = 2*constant
+  def function = 2 * constant
 
   def main(args: Array[String]): Unit = {
     println(new Main().default)

@@ -46,7 +46,7 @@ object ViteConfigGen {
 			_ <- validatePathForJSInjection(rootDirPath).toLeft(())
 			_ <- validatePathForJSInjection(inputPath).toLeft(())
 			_ <- validatePathForJSInjection(outDirPath).toLeft(())
-			_ <- sourcePaths.foldLeft[Either[ValidationError, Unit]](Right()) { (currentEither, nextPath) =>
+			_ <- sourcePaths.foldLeft[Either[ValidationError, Unit]](Right(())) { (currentEither, nextPath) =>
 				currentEither.flatMap(_ => validatePathForJSInjection(nextPath).toLeft(()))
 			}
 		} yield combineAll(
@@ -126,13 +126,13 @@ object ViteConfigGen {
 		   |}
 		   |
 		   |const $minimumConfigVariableName = {
-		   |  root: $rootDirPath,
+		   |  root: "$rootDirPath",
 		   |  build: {
 		   |    rollupOptions: {
-		   |      input: $inputPath,
+		   |      input: "$inputPath",
 		   |      output: {
 		   |      	entryFileNames: `[name].js`,
-		   |        dir: $outputDirPath,
+		   |        dir: "$outputDirPath",
 		   |      },
 		   |    },
 		   |  },
@@ -141,8 +141,10 @@ object ViteConfigGen {
 		   |export default defineConfig(($envVariableName) => {
 		   |  $buildConfigString
 		   |
+		   |  console.log(config)
+		   |
 		   |  return $configVariableName;
-		   |}
+		   |})
 		   |""".stripMargin
 	}
 
@@ -162,11 +164,11 @@ object ViteConfigGen {
 			  s"""const ${appliedConfigName(i)} = $conf instanceof Function ? $conf($envVariableName) : $conf;"""
 		  }
 
-		val configArray = ((0 until numConfigs).map(appliedConfigName) + minimumConfigVariableName).mkString("[", ", ", "]")
+		val configArgs = ((0 until numConfigs).map(appliedConfigName) :+ minimumConfigVariableName).mkString(", ")
 
 		applyConfigStatements ++ List(
 			"""const customizer = (objValue, srcValue) => _.isArray(objValue) && _.isArray(srcValue) ? objValue.concat(srcValue) : undefined;""",
-			s"""_.mergeWith($configVariableName, $configArray, customizer);""",
+			s"""_.mergeWith($configVariableName, $configArgs, customizer);""",
 		)
 	}
 }

@@ -1,7 +1,7 @@
 
 name := """sbt-vite"""
 organization := "org.hungerford"
-version := "0.1-SNAPSHOT"
+version := "0.1"
 
 sbtPlugin := true
 
@@ -19,7 +19,7 @@ sbtPlugin := true
 //libraryDependencies ++= Seq("org.specs2" %% "specs2-core" % "4.12.8" % "test")
 //scalacOptions in Test ++= Seq("-Yrangepos")
 
-addSbtPlugin("org.scala-js" %% "sbt-scalajs" % "1.3.0")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.15.0")
 
 inThisBuild(List(
   organization := "org.hungerford",
@@ -37,10 +37,10 @@ inThisBuild(List(
 
 console / initialCommands := """import sbtvite._"""
 
-enablePlugins(ScriptedPlugin)
+enablePlugins(SbtPlugin, ScriptedPlugin)
 // set up 'scripted; sbt plugin for testing sbt plugins
 scriptedLaunchOpts ++=
-  Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+  Seq("-Xmx1024M", "-Dvite.plugin.version=" + version.value)
 
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
 ThisBuild / githubWorkflowPublishTargetBranches :=
