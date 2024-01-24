@@ -19,6 +19,8 @@ sbtPlugin := true
 //libraryDependencies ++= Seq("org.specs2" %% "specs2-core" % "4.12.8" % "test")
 //scalacOptions in Test ++= Seq("-Yrangepos")
 
+addSbtPlugin("org.scala-js" %% "sbt-scalajs" % "1.3.0")
+
 inThisBuild(List(
   organization := "org.hungerford",
   homepage := Some(url("https://github.com/johnhungerford/sbt-vite")),
@@ -29,11 +31,11 @@ inThisBuild(List(
       "John Hungerford",
       "hungerfordjustice@gmail.com",
       url("https://johnhungerford.github.io/")
-    )
-  )
+    ),
+  ),
 ))
 
-initialCommands in console := """import sbtvite._"""
+console / initialCommands := """import sbtvite._"""
 
 enablePlugins(ScriptedPlugin)
 // set up 'scripted; sbt plugin for testing sbt plugins
