@@ -1,7 +1,6 @@
 inThisBuild(List(
   scalaVersion := "2.12.17",
   sbtPlugin := true,
-  sonatypeProfileName := "io.github.johnhungerford",
   organization := "io.github.johnhungerford.sbt.vite",
   organizationName := "johnhungerford",
   organizationHomepage := Some(url("https://johnhungerford.github.io")),
@@ -34,6 +33,6 @@ addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.15.0")
 console / initialCommands := """import sbtvite._"""
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
-sonatypeProfileName := "johnhungerford"
+sonatypeProfileName := "io.github.johnhungerford"
 
 enablePlugins(ScriptedPlugin)
