@@ -1,7 +1,7 @@
 inThisBuild(List(
   scalaVersion := "2.12.17",
   sbtPlugin := true,
-  sonatypeProfileName := "johnhungerford",
+  sonatypeProfileName := "io.github.johnhungerford",
   organization := "io.github.johnhungerford.sbt.vite",
   organizationName := "johnhungerford",
   organizationHomepage := Some(url("https://johnhungerford.github.io")),
