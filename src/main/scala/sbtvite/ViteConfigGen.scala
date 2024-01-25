@@ -141,8 +141,6 @@ object ViteConfigGen {
 		   |export default defineConfig(($envVariableName) => {
 		   |  $buildConfigString
 		   |
-		   |  console.log(config)
-		   |
 		   |  return $configVariableName;
 		   |})
 		   |""".stripMargin
