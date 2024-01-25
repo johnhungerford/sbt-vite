@@ -26,6 +26,7 @@ inThisBuild(List(
 //    Seq(RefPredicate.StartsWith(Ref.Tag("v"))),
   scriptedLaunchOpts ++=
     Seq("-Xmx1024M", "-Dvite.plugin.version=" + version.value),
+  sonatypeProfileName := "johnhungerford",
 ))
 
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.15.0")
