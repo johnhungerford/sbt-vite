@@ -11,9 +11,14 @@ libraryDependencies ++= Seq(
 
 enablePlugins(ScalaJSPlugin, SbtVitePlugin)
 
+scalaJSUseMainModuleInitializer := true
+
 scalaJSLinkerConfig ~= {
 	_.withModuleKind(ModuleKind.ESModule)
 	 .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("gsp")))
 }
+
+viteOtherSources += Location.FromProject(file("src/main/javascript"))
+viteOtherSources += Location.FromProject(file("src/main/entrypoint"))
 
 testFrameworks += new TestFramework("utest.runner.Framework")

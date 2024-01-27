@@ -34,28 +34,37 @@ object ViteConfigGen {
 	 * @param inputPath   the path, relative to rootDirPath, of the JS entrypoint to be bundled
 	 * @param outDirPath  the absolute path (or relative to the CWD when executing vite) where
 	 *                    vite will output bundled artifacts
+	 * @param plugins     plugins to add to config. Maps the plugin entry to any import statements
+	 *                    required to bring the plugin into scope.
+	 *                    E.g., Map("react()" -> "import react from '@vitejs/plugin-react'")
 	 * @return Left if any of the four inputs are invalid, right with the generated JS string if not
 	 */
 	def generate(
 		sourcePaths: List[String],
 		rootDirPath: String,
-		inputPath: String,
+		inputPath: Option[String],
 		outDirPath: String,
-	): Either[ValidationError, String] =
+		otherImports: List[String] = Nil,
+		plugins: List[String] = Nil,
+		rollupPlugins: List[String] = Nil,
+	): Either[ValidationError, String] = {
 		for {
 			_ <- validatePathForJSInjection(rootDirPath).toLeft(())
-			_ <- validatePathForJSInjection(inputPath).toLeft(())
+			_ <- inputPath.fold[Either[ValidationError, Unit]](Right(()))(v => validatePathForJSInjection(v).toLeft(()))
 			_ <- validatePathForJSInjection(outDirPath).toLeft(())
 			_ <- sourcePaths.foldLeft[Either[ValidationError, Unit]](Right(())) { (currentEither, nextPath) =>
 				currentEither.flatMap(_ => validatePathForJSInjection(nextPath).toLeft(()))
 			}
 		} yield combineAll(
-			requiredImports ++ generateImportStatements(sourcePaths),
+			otherImports ++ generateImportStatements(sourcePaths),
+			generatePluginsValue(plugins),
+			generatePluginsValue(rollupPlugins),
 			generateBuildConfigStatements(sourcePaths.length),
 			rootDirPath,
 			inputPath,
 			outDirPath,
 		)
+	}
 
 	final case class ValidationError(message: String)
 
@@ -88,21 +97,17 @@ object ViteConfigGen {
 			case _ => None
 		}
 
-	private val requiredImports = List(
-		"""import _ from 'lodash'""",
-		"""import { defineConfig } from "vite";""",
-		"""import sourcemaps from 'rollup-plugin-sourcemaps';""",
-	)
-
 	private val configVariableName = "config"
 	private val minimumConfigVariableName = "minimalConfig"
 	private val envVariableName = "env"
 
 	private def combineAll(
 		importStatements: List[String],
+		pluginsValue: String,
+		rollupPluginsValue: String,
 		buildConfigStatements: List[String],
 		rootDirPath: String,
-		inputPath: String,
+		inputPath: Option[String],
 		outputDirPath: String,
 	): String = {
 		val importsString = importStatements.mkString("\n")
@@ -120,16 +125,16 @@ object ViteConfigGen {
 		   |    sourcemap: true,
 		   |    rollupOptions: {
 		   |      treeshake: false,
-		   |      plugins: [sourcemaps()],
 		   |    },
 		   |  },
 		   |}
 		   |
 		   |const $minimumConfigVariableName = {
 		   |  root: "$rootDirPath",
+		   |  plugins: $pluginsValue,
 		   |  build: {
-		   |    rollupOptions: {
-		   |      input: "$inputPath",
+		   |    rollupOptions: {${inputPath.fold("")(v => s"""\n      input: "${v}",""")}
+		   |      plugins: $rollupPluginsValue,
 		   |      output: {
 		   |      	entryFileNames: `[name].js`,
 		   |        dir: "$outputDirPath",
@@ -153,6 +158,12 @@ object ViteConfigGen {
 		sourcePaths.zipWithIndex.map {
 			case (path, i) => s"""import ${configName(i)} from '$path';"""
 		}
+	}
+
+	private def generatePluginsValue(pluginExpressions: List[String]): String = {
+		pluginExpressions
+		  .map(_.trim.stripSuffix(",").trim)
+		  .mkString("[", ", ", "]")
 	}
 
 	private def generateBuildConfigStatements(numConfigs: Int): List[String] = {

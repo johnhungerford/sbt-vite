@@ -3,7 +3,7 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 
 @js.native
-@JSImport("Lodash", JSImport.Default)
+@JSImport("lodash", JSImport.Default)
 object Lodash extends js.Object:
 	def merge(obj1: js.Object, obj2: js.Object): js.Object = js.native
 
