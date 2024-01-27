@@ -49,14 +49,17 @@ object NpmNpmExecutor extends NpmExecutor {
 		val additionalOptionsStr = additionalOptions.mkString(" ")
 		val baseCommand =
 			s"npm install $additionalOptionsStr"
+		val existingCommand = baseCommand
 		val command = baseCommand + " " + NpmExecutor.depsString(deps.toSeq)
 		val devCommand = baseCommand + " --save-dev " + NpmExecutor.depsString(devDeps.toSeq)
 
 		cwd.foreach(sbt.IO.createDirectory)
+		val existingResult = Process(existingCommand, cwd, environment.toSeq*).run().exitValue()
 		val result = Process(command, cwd, environment.toSeq*).run().exitValue()
 		val devResult = Process(devCommand, cwd, environment.toSeq*).run().exitValue()
 
 		for {
+			_ <- if (existingResult == 0) Right(()) else Left(s"Failed to install npm dependencies using npm. Exit code: $result")
 			_ <- if (result == 0) Right(()) else Left(s"Failed to install npm dependencies using npm. Exit code: $result")
 			_ <- if (devResult == 0) Right(()) else Left(s"Failed to install npm dev dependencies using npm. Exit code: $devResult")
 		} yield ()
@@ -92,15 +95,17 @@ object YarnNpmExecutor extends NpmExecutor {
 		val additionalOptionsStr = additionalOptions.mkString(" ")
 		val baseCommand = s"yarn add $additionalOptionsStr"
 		val command = baseCommand + " " + NpmExecutor.depsString(deps.toSeq)
-		val devCommand = baseCommand + " --save-dev " + NpmExecutor.depsString(devDeps.toSeq)
+		val devCommand = baseCommand + " --dev " + NpmExecutor.depsString(devDeps.toSeq)
 
 		cwd.foreach(sbt.IO.createDirectory)
+		val existingResult = Process(baseCommand, cwd, environment.toSeq*).run().exitValue()
 		val result = Process(command, cwd, environment.toSeq*).run().exitValue()
 		val devResult = Process(devCommand, cwd, environment.toSeq*).run().exitValue()
 
 		for {
-			_ <- if (result == 0) Right(()) else Left(s"Failed to install npm dependencies using yarn. Exit code: $result")
-			_ <- if (devResult == 0) Right(()) else Left(s"Failed to install npm dev dependencies using yarn. Exit code: $devResult")
+			_ <- if (existingResult == 0) Right(()) else Left(s"Failed to install npm dependencies using npm. Exit code: $result")
+			_ <- if (result == 0) Right(()) else Left(s"Failed to install npm dependencies using npm. Exit code: $result")
+			_ <- if (devResult == 0) Right(()) else Left(s"Failed to install npm dev dependencies using npm. Exit code: $devResult")
 		} yield ()
 	}
 
@@ -138,12 +143,14 @@ object PnpmNpmExecutor extends NpmExecutor {
 		val devCommand = baseCommand + " --save-dev " + NpmExecutor.depsString(devDeps.toSeq)
 
 		cwd.foreach(sbt.IO.createDirectory)
+		val existingResult = Process(baseCommand, cwd, environment.toSeq*).run().exitValue()
 		val result = Process(command, cwd, environment.toSeq*).run().exitValue()
 		val devResult = Process(devCommand, cwd, environment.toSeq*).run().exitValue()
 
 		for {
-			_ <- if (result == 0) Right(()) else Left(s"Failed to install npm dependencies using pnpm. Exit code: $result")
-			_ <- if (devResult == 0) Right(()) else Left(s"Failed to install npm dev dependencies using pnpm. Exit code: $devResult")
+			_ <- if (existingResult == 0) Right(()) else Left(s"Failed to install npm dependencies using npm. Exit code: $result")
+			_ <- if (result == 0) Right(()) else Left(s"Failed to install npm dependencies using npm. Exit code: $result")
+			_ <- if (devResult == 0) Right(()) else Left(s"Failed to install npm dev dependencies using npm. Exit code: $devResult")
 		} yield ()
 	}
 

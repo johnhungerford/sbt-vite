@@ -793,14 +793,11 @@ object SbtVitePlugin extends AutoPlugin {
 	)
 
 	private val perConfigSettings = Seq(
-		viteDependencyManagement :=
-		  DependencyManagement.Managed(NpmManager.Npm),
+		viteDependencyManagement := viteDependencyManagement.value,
 
-		viteVersion := "^5.0.12",
+		viteVersion := viteVersion.value,
 
-		viteProjectRoot := Location.ProjectRoot,
-
-		viteBundleDirectoryName := "bundle",
+		viteProjectRoot := viteProjectRoot.value,
 
 		viteBundleDirectory :=
 		  viteTargetDirectory.value / viteBundleDirectoryName.value,
@@ -810,6 +807,8 @@ object SbtVitePlugin extends AutoPlugin {
 		viteBundleLocation := Location.FromCwd(
 			viteBundleDirectory.value / bundleFilename.value,
 		),
+
+		viteBundleDirectoryName := "bundle",
 
 		viteConfigName := "vite.config.js",
 
@@ -831,6 +830,12 @@ object SbtVitePlugin extends AutoPlugin {
 	)
 
 	override lazy val projectSettings = Seq(
+		viteDependencyManagement := DependencyManagement.Managed(NpmManager.Npm),
+
+		viteVersion := "^5.0.12",
+
+		viteProjectRoot := Location.ProjectRoot,
+
 		vitePrepareSources := (Compile / vitePrepareSources).value,
 		viteInstallDependencies := (Compile / viteInstallDependencies).value,
 		viteGenerateConfig := (Compile / viteGenerateConfig).value,
