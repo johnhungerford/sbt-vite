@@ -13,6 +13,14 @@ trait NpmExecutor {
 		cwd: Option[sbt.File],
 	): Either[String, Unit]
 
+	def runProcess(
+		pckg: String,
+		module: String,
+		additionalOptions: Seq[String],
+		environment: Map[String, String],
+		cwd: Option[sbt.File],
+	): Process
+
 	def run(
 		pckg: String,
 		module: String,
@@ -65,6 +73,21 @@ object NpmNpmExecutor extends NpmExecutor {
 		} yield ()
 	}
 
+	def runProcess(
+		pckg: String,
+		module: String,
+		arguments: Seq[String],
+		environment: Map[String, String],
+		cwd: Option[sbt.File],
+	): Process = {
+		val baseCommand = s"npx --no -p $pckg $module"
+
+		val command = s"$baseCommand ${arguments.mkString(" ")}"
+
+		cwd.foreach(sbt.IO.createDirectory)
+		Process(command, cwd, environment.toSeq *).run()
+	}
+
 	def run(
 		pckg: String,
 		module: String,
@@ -72,12 +95,7 @@ object NpmNpmExecutor extends NpmExecutor {
 		environment: Map[String, String],
 		cwd: Option[sbt.File],
 	): Either[String, Unit] = {
-		val baseCommand = s"npx --no -p $pckg $module"
-
-		val command = s"$baseCommand ${arguments.mkString(" ")}"
-
-		cwd.foreach(sbt.IO.createDirectory)
-		val result = Process(command, cwd, environment.toSeq*).run().exitValue()
+		val result = runProcess(pckg, module, arguments, environment, cwd).exitValue()
 
 		if (result == 0) Right(())
 		else Left(s"Failed to run $module in npm package $pckg using npx. Exit code: $result")
@@ -109,6 +127,21 @@ object YarnNpmExecutor extends NpmExecutor {
 		} yield ()
 	}
 
+	def runProcess(
+		pckg: String,
+		module: String,
+		arguments: Seq[String],
+		environment: Map[String, String],
+		cwd: Option[sbt.File],
+	): Process = {
+		val baseCommand = s"npx --no -p $pckg $module"
+
+		val command = s"$baseCommand ${arguments.mkString(" ")}"
+
+		cwd.foreach(sbt.IO.createDirectory)
+		Process(command, cwd, environment.toSeq *).run()
+	}
+
 	def run(
 		pckg: String,
 		module: String,
@@ -116,13 +149,7 @@ object YarnNpmExecutor extends NpmExecutor {
 		environment: Map[String, String],
 		cwd: Option[sbt.File],
 	): Either[String, Unit] = {
-		val baseCommand = s"npx --no -p $pckg $module"
-
-		val command = s"$baseCommand ${arguments.mkString(" ")}"
-
-		cwd.foreach(sbt.IO.createDirectory)
-		val result = Process(command, cwd, environment.toSeq*).run().exitValue()
-
+		val result = runProcess(pckg, module, arguments, environment, cwd).exitValue()
 		if (result == 0) Right(())
 		else Left(s"Failed to run $module in npm package $pckg using npx. Exit code: $result")
 	}
@@ -154,6 +181,21 @@ object PnpmNpmExecutor extends NpmExecutor {
 		} yield ()
 	}
 
+	def runProcess(
+		pckg: String,
+		module: String,
+		arguments: Seq[String],
+		environment: Map[String, String],
+		cwd: Option[sbt.File],
+	): Process = {
+		val baseCommand = s"pnpx exec $module"
+
+		val command = s"$baseCommand ${arguments.mkString(" ")}"
+
+		cwd.foreach(sbt.IO.createDirectory)
+		Process(command, cwd, environment.toSeq*).run()
+	}
+
 	def run(
 		pckg: String,
 		module: String,
@@ -161,13 +203,7 @@ object PnpmNpmExecutor extends NpmExecutor {
 		environment: Map[String, String],
 		cwd: Option[sbt.File],
 	): Either[String, Unit] = {
-		val baseCommand = s"pnpx exec $module"
-
-		val command = s"$baseCommand ${arguments.mkString(" ")}"
-
-		cwd.foreach(sbt.IO.createDirectory)
-		val result = Process(command, cwd, environment.toSeq*).run().exitValue()
-
+		val result = runProcess(pckg, module, arguments, environment, cwd).exitValue()
 		if (result == 0) Right(())
 		else Left(s"Failed to run $module in npm package $pckg using pnpx. Exit code: $result")
 	}

@@ -228,6 +228,14 @@ object SbtVitePlugin extends AutoPlugin {
 			"Additional arguments/options to use when running pnpm install",
 		)
 
+		/**
+		 * When true, do not generate a vite config. Instead, vite commands will
+		 * simply run in [[viteProjectRoot]] without explicitly specifying a vite
+		 * config.
+		 */
+		val viteUseExistingConfig = settingKey[Boolean](
+			"Skip config generation and assume existing vite.config.js at viteProjectRoot",
+		)
 
 		// Public tasks
 
@@ -260,6 +268,14 @@ object SbtVitePlugin extends AutoPlugin {
 		 */
 		val viteBuild = taskKey[Unit](
 			"Run vite build on all web artifacts",
+		)
+
+		/**
+		 * Starts a vite development server. Depends
+		 * * on [[viteGenerateConfig]] and [[viteInstallDependencies]].
+		 */
+		val viteDevServer = taskKey[Unit](
+			"Start a development server using vite"
 		)
 	}
 
@@ -304,6 +320,8 @@ object SbtVitePlugin extends AutoPlugin {
 	import autoImport.*
 
 	private val testSettings = Seq(
+		viteUseExistingConfig := false,
+
 		viteTargetDirectory := target.value / "sbt-vite-test",
 
 		viteExecutionDirectory := {
@@ -388,37 +406,37 @@ object SbtVitePlugin extends AutoPlugin {
 		},
 
 		viteGenerateConfig := {
-			val rootDirPath = (Test / viteExecutionDirectory).value
-			val linkOutputDir = (Test / fastLinkJS / scalaJSLinkerOutputDirectory)
-			  .value.toPath
-			  .toAbsolutePath
-			val inputPath = linkOutputDir / "main.js"
-			val outDir = (Test / viteBundleDirectory).value.toPath.toAbsolutePath
-			val requiredImports = List(
-				"""import _ from 'lodash'""",
-				"""import { defineConfig } from "vite";""",
-				"""import sourcemaps from 'rollup-plugin-sourcemaps';""",
-			)
+			if ((Test / viteUseExistingConfig).value) {}
+			else {
+				val rootDirPath = (Test / viteExecutionDirectory).value
+				val linkOutputDir = (Test / fastLinkJS / scalaJSLinkerOutputDirectory)
+				  .value.toPath
+				  .toAbsolutePath
+				val inputPath = linkOutputDir / "main.js"
+				val outDir = (Test / viteBundleDirectory).value.toPath.toAbsolutePath
+				val requiredImports = List(
+					"""import _ from 'lodash'""",
+					"""import { defineConfig } from "vite";""",
+					"""import sourcemaps from 'rollup-plugin-sourcemaps';""",
+				)
 
-			val configString =
-				ViteConfigGen.generate(
-					(Test / viteConfigSources).value.toList.map(_.toString),
-					rootDirPath.toString,
-					Some(inputPath.toString),
-					outDir.toString,
-					requiredImports,
-					Nil,
-					List("sourcemaps()")
-				).fold(err => throw new IllegalArgumentException(err.message), identity)
+				val configString =
+					ViteConfigGen.generate(
+						(Test / viteConfigSources).value.toList.map(_.resolve(file("."), baseDirectory.value).toString),
+						rootDirPath.toString,
+						Some(inputPath.toString),
+						outDir.toString,
+						requiredImports,
+						Nil,
+						List("sourcemaps()"),
+					).fold(err => throw new IllegalArgumentException(err.message), identity)
 
-			val configFile = (Test / viteConfigLocation)
-			  .value
-			  .resolve(file("."), baseDirectory.value)
-			IO.write(configFile, configString)
+				val configFile = (Test / viteConfigLocation)
+				  .value
+				  .resolve(file("."), baseDirectory.value)
+				IO.write(configFile, configString)
+			}
 		},
-
-		viteGenerateConfig :=
-		  ((Test / viteGenerateConfig) dependsOn (Test / fastLinkJS)).value,
 
 		vitePrepareSources / fileInputs := {
 			val sources = (Test / viteOtherSources)
@@ -459,8 +477,7 @@ object SbtVitePlugin extends AutoPlugin {
 			  .resolve(file("."), baseDirectory.value)
 			  .toString,
 			(Test / fastLinkJS / scalaJSLinkerOutputDirectory).value.toPath.toString + "/*.js",
-			((Test / viteExecutionDirectory).value / "package*.json")
-			  .toString,
+			(Test / viteExecutionDirectory).value.absolutePath.stripSuffix("/") + "/package*.json",
 		),
 
 		viteBuild := {
@@ -489,44 +506,34 @@ object SbtVitePlugin extends AutoPlugin {
 				val packageAndModule = "vite"
 				val viteArgs = (Test / viteExtraArgs).value
 				val viteEnv = (Test / viteEnvironment).value
-				val result = (Test / viteDependencyManagement).value match {
-					case DependencyManagement.Manual =>
-						val executor = NpmNpmExecutor
-						executor.run(
-							packageAndModule,
-							packageAndModule,
-							s"build -c $configPath" +: viteArgs,
-							viteEnv ++ npmEnv,
-							Some(viteCwd),
-						)
-					case DependencyManagement.InstallOnly(manager) =>
-						val executor = NpmExecutor(manager)
-						executor.run(
-							packageAndModule,
-							packageAndModule,
-							s"build -c $configPath" +: viteArgs,
-							viteEnv ++ (manager match {
-								case NpmManager.Yarn => yarnEnv
-								case NpmManager.Npm => npmEnv
-								case NpmManager.Pnpm => pnpmEnv
-							}),
-							Some(viteCwd),
-						)
 
+				val (executor, managerOpt) = (Test / viteDependencyManagement).value match {
+					case DependencyManagement.Manual => (NpmNpmExecutor, None)
+					case DependencyManagement.InstallOnly(manager) =>
+						(NpmExecutor(manager), Some(manager))
 					case DependencyManagement.Managed(manager) =>
-						val executor = NpmExecutor(manager)
-						executor.run(
-							packageAndModule,
-							packageAndModule,
-							s"build -c $configPath" +: viteArgs,
-							viteEnv ++ (manager match {
-								case NpmManager.Yarn => yarnEnv
-								case NpmManager.Npm => npmEnv
-								case NpmManager.Pnpm => pnpmEnv
-							}),
-							Some(viteCwd),
-						)
+						(NpmExecutor(manager), Some(manager))
 				}
+
+				val command =
+					if ((Test / viteUseExistingConfig).value)
+						s"build" +: viteArgs
+					else s"build -c $configPath" +: viteArgs
+
+				val managerEnv = viteEnv ++ (managerOpt match {
+					case None => Nil
+					case Some(NpmManager.Npm) => npmEnv
+					case Some(NpmManager.Yarn) => yarnEnv
+					case Some(NpmManager.Pnpm) => pnpmEnv
+				})
+
+				val result = executor.run(
+					packageAndModule,
+					packageAndModule,
+					command,
+					viteEnv ++ managerEnv,
+					Some(viteCwd),
+				)
 
 				result match {
 					case Right(_) => {}
@@ -541,6 +548,7 @@ object SbtVitePlugin extends AutoPlugin {
 			  Test / viteGenerateConfig,
 			  Test / viteInstallDependencies,
 			  Test / vitePrepareSources,
+			  Test / fastLinkJS,
 		  )
 		  .value,
 
@@ -548,6 +556,8 @@ object SbtVitePlugin extends AutoPlugin {
 	)
 
 	private val compileSettings = Seq(
+		viteUseExistingConfig := viteUseExistingConfig.value,
+
 		viteTargetDirectory := target.value / "sbt-vite",
 
 		viteExecutionDirectory := {
@@ -630,40 +640,41 @@ object SbtVitePlugin extends AutoPlugin {
 		},
 
 		viteGenerateConfig := {
-			val rootDirPath = (Compile / viteExecutionDirectory).value
-			val outDir = (Compile / viteBundleDirectory).value.toPath.toAbsolutePath
-			val isManaged = (Compile / viteDependencyManagement).value match {
-				case DependencyManagement.Managed(manager) => true
-				case _ => false
+			if ((Compile / viteUseExistingConfig).value) {}
+			else {
+				val rootDirPath = (Compile / viteExecutionDirectory).value
+				val outDir = (Compile / viteBundleDirectory).value.toPath.toAbsolutePath
+				val isManaged = (Compile / viteDependencyManagement).value match {
+					case DependencyManagement.Managed(manager) => true
+					case _ => false
+				}
+				val requiredImports = List(
+					"""import _ from 'lodash'""",
+					"""import { defineConfig } from "vite";""",
+					"""import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";"""
+				)
+
+				val plugins = List(
+					s"""scalaJSPlugin({ projectId: "${name.value}", cwd: "${file(".").toPath.toAbsolutePath}" })""",
+				)
+
+				val configString =
+					ViteConfigGen.generate(
+						(Compile / viteConfigSources).value.toList.map(_.resolve(file("."), baseDirectory.value).toString),
+						rootDirPath.toString,
+						None,
+						outDir.toString,
+						requiredImports,
+						plugins,
+						development = false,
+					).fold(err => throw new IllegalArgumentException(err.message), identity)
+
+				val configFile = (Compile / viteConfigLocation)
+				  .value
+				  .resolve(file("."), baseDirectory.value)
+				IO.write(configFile, configString)
 			}
-			val requiredImports = List(
-				"""import _ from 'lodash'""",
-				"""import { defineConfig } from "vite";""",
-				"""import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";"""
-			)
-
-			val plugins = List(
-				s"""scalaJSPlugin({ projectId: "${name.value}", cwd: "${file(".").toPath.toAbsolutePath}" })""",
-			)
-
-			val configString =
-				ViteConfigGen.generate(
-					(Compile / viteConfigSources).value.toList.map(_.toString),
-					rootDirPath.toString,
-					None,
-					outDir.toString,
-					requiredImports,
-					plugins,
-				).fold(err => throw new IllegalArgumentException(err.message), identity)
-
-			val configFile = (Compile / viteConfigLocation)
-			  .value
-			  .resolve(file("."), baseDirectory.value)
-			IO.write(configFile, configString)
 		},
-
-		viteGenerateConfig :=
-		  ((Compile / viteGenerateConfig) dependsOn (Compile / fastLinkJS)).value,
 
 		vitePrepareSources / fileInputs := {
 			val sources = (Compile / viteOtherSources)
@@ -706,8 +717,7 @@ object SbtVitePlugin extends AutoPlugin {
 			  .resolve(file("."), baseDirectory.value)
 			  .toString,
 			(Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value.toPath.toString + "/*.js",
-			((Compile / viteExecutionDirectory).value / "package*.json")
-			  .toString,
+			(Compile / viteExecutionDirectory).value.absolutePath.stripSuffix("/") + "/package*.json",
 		),
 
 		viteBuild := {
@@ -736,44 +746,35 @@ object SbtVitePlugin extends AutoPlugin {
 				val packageAndModule = "vite"
 				val viteArgs = (Compile / viteExtraArgs).value
 				val viteEnv = (Compile / viteEnvironment).value
-				val result = (Compile / viteDependencyManagement).value match {
-					case DependencyManagement.Manual =>
-						val executor = NpmNpmExecutor
-						executor.run(
-							packageAndModule,
-							packageAndModule,
-							s"build -c $configPath" +: viteArgs,
-							viteEnv ++ npmEnv,
-							Some(viteCwd),
-						)
-					case DependencyManagement.InstallOnly(manager) =>
-						val executor = NpmExecutor(manager)
-						executor.run(
-							packageAndModule,
-							packageAndModule,
-							s"build -c $configPath" +: viteArgs,
-							viteEnv ++ (manager match {
-								case NpmManager.Yarn => yarnEnv
-								case NpmManager.Npm => npmEnv
-								case NpmManager.Pnpm => pnpmEnv
-							}),
-							Some(viteCwd),
-						)
 
+				val (executor, managerOpt) = (Compile / viteDependencyManagement).value match {
+					case DependencyManagement.Manual =>
+						(NpmNpmExecutor, None)
+					case DependencyManagement.InstallOnly(manager) =>
+						(NpmExecutor(manager), Some(manager))
 					case DependencyManagement.Managed(manager) =>
-						val executor = NpmExecutor(manager)
-						executor.run(
-							packageAndModule,
-							packageAndModule,
-							s"build -c $configPath" +: viteArgs,
-							viteEnv ++ (manager match {
-								case NpmManager.Yarn => yarnEnv
-								case NpmManager.Npm => npmEnv
-								case NpmManager.Pnpm => pnpmEnv
-							}),
-							Some(viteCwd),
-						)
+						(NpmExecutor(manager), Some(manager))
 				}
+
+				val command =
+					if ((Compile / viteUseExistingConfig).value)
+						s"build" +: viteArgs
+					else s"build -c $configPath" +: viteArgs
+
+				val managerEnv = viteEnv ++ (managerOpt match {
+					case None => Nil
+					case Some(NpmManager.Npm) => npmEnv
+					case Some(NpmManager.Yarn) => yarnEnv
+					case Some(NpmManager.Pnpm) => pnpmEnv
+				})
+
+				val result = executor.run(
+					packageAndModule,
+					packageAndModule,
+					command,
+					viteEnv ++ managerEnv,
+					Some(viteCwd),
+				)
 
 				result match {
 					case Right(_) => {}
@@ -788,8 +789,71 @@ object SbtVitePlugin extends AutoPlugin {
 			  Compile / viteGenerateConfig,
 			  Compile / viteInstallDependencies,
 			  Compile / vitePrepareSources,
+			  Compile / fastLinkJS,
 		  )
 		  .value,
+
+		viteDevServer := {
+			val configPath = (Compile / viteConfigLocation)
+			  .value
+			  .resolve(file("."), baseDirectory.value)
+			  .toPath
+			  .toString
+			val viteCwd = (Compile / viteExecutionDirectory)
+			  .value
+			val npmEnv = (Compile / npmEnvironment).value
+			val yarnEnv = (Compile / yarnEnvironment).value
+			val pnpmEnv = (Compile / pnpmEnvironment).value
+			val packageAndModule = "vite"
+			val viteArgs = (Compile / viteExtraArgs).value
+			val viteEnv = (Compile / viteEnvironment).value
+
+			val (executor, managerOpt) = (Compile / viteDependencyManagement).value match {
+				case DependencyManagement.Manual =>
+					(NpmNpmExecutor, None)
+				case DependencyManagement.InstallOnly(manager) =>
+					(NpmExecutor(manager), Some(manager))
+				case DependencyManagement.Managed(manager) =>
+					(NpmExecutor(manager), Some(manager))
+			}
+
+			val command =
+				if ((Compile / viteUseExistingConfig).value)
+					viteArgs
+				else s"-c $configPath" +: viteArgs
+
+			val managerEnv = viteEnv ++ (managerOpt match {
+				case None => Nil
+				case Some(NpmManager.Npm) => npmEnv
+				case Some(NpmManager.Yarn) => yarnEnv
+				case Some(NpmManager.Pnpm) => pnpmEnv
+			})
+
+			val process = executor.runProcess(
+				packageAndModule,
+				packageAndModule,
+				command,
+				viteEnv ++ managerEnv,
+				Some(viteCwd),
+			)
+
+			scala.io.StdIn.readLine("Running vite dev server. Press enter to close")
+			println("Closing dev server...")
+			while (process.isAlive()) {
+				process.destroy()
+			}
+			println("...Closed")
+			process.exitValue()
+		},
+
+		viteDevServer := (Compile / viteDevServer)
+		  .dependsOn(
+			  Compile / viteGenerateConfig,
+			  Compile / viteInstallDependencies,
+			  Compile / vitePrepareSources,
+		  )
+		  .value,
+
 	)
 
 	private val perConfigSettings = Seq(
@@ -835,6 +899,8 @@ object SbtVitePlugin extends AutoPlugin {
 		viteVersion := "^5.0.12",
 
 		viteProjectRoot := Location.ProjectRoot,
+
+		viteUseExistingConfig := false,
 
 		vitePrepareSources := (Compile / vitePrepareSources).value,
 		viteInstallDependencies := (Compile / viteInstallDependencies).value,

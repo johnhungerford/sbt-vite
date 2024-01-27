@@ -37,6 +37,7 @@ object ViteConfigGen {
 	 * @param plugins     plugins to add to config. Maps the plugin entry to any import statements
 	 *                    required to bring the plugin into scope.
 	 *                    E.g., Map("react()" -> "import react from '@vitejs/plugin-react'")
+	 * @param development Generate a config for development (i.e., for testing or dev server)
 	 * @return Left if any of the four inputs are invalid, right with the generated JS string if not
 	 */
 	def generate(
@@ -47,6 +48,7 @@ object ViteConfigGen {
 		otherImports: List[String] = Nil,
 		plugins: List[String] = Nil,
 		rollupPlugins: List[String] = Nil,
+		development: Boolean = true,
 	): Either[ValidationError, String] = {
 		for {
 			_ <- validatePathForJSInjection(rootDirPath).toLeft(())
@@ -63,6 +65,7 @@ object ViteConfigGen {
 			rootDirPath,
 			inputPath,
 			outDirPath,
+			development,
 		)
 	}
 
@@ -101,6 +104,29 @@ object ViteConfigGen {
 	private val minimumConfigVariableName = "minimalConfig"
 	private val envVariableName = "env"
 
+	private val developmentDefaultConfig =
+		"""{
+		  |  mode: 'development',
+		  |  build: {
+		  |    cssCodeSplit: false,
+		  |    minify: false,
+		  |    chunkSizeWarningLimit: 100000,
+		  |    reportCompressedSize: false,
+		  |    sourcemap: true,
+		  |    rollupOptions: {
+		  |      treeshake: false,
+		  |    },
+		  |  },
+		  |}""".stripMargin
+
+	private val productionDefaultConfig =
+		"""{
+		  |  mode: 'production',
+		  |  build: {
+		  |    sourcemap: true,
+		  |  },
+		  |}""".stripMargin
+
 	private def combineAll(
 		importStatements: List[String],
 		pluginsValue: String,
@@ -109,25 +135,17 @@ object ViteConfigGen {
 		rootDirPath: String,
 		inputPath: Option[String],
 		outputDirPath: String,
+		development: Boolean,
 	): String = {
 		val importsString = importStatements.mkString("\n")
 		val buildConfigString = buildConfigStatements.mkString("\n  ")
+		val defaultConfigString =
+			if (development) developmentDefaultConfig
+			else productionDefaultConfig
 
 		s"""$importsString
 		   |
-		   |const $configVariableName = {
-		   |  mode: 'development',
-		   |  build: {
-		   |    cssCodeSplit: false,
-		   |    minify: false,
-		   |    chunkSizeWarningLimit: 100000,
-		   |    reportCompressedSize: false,
-		   |    sourcemap: true,
-		   |    rollupOptions: {
-		   |      treeshake: false,
-		   |    },
-		   |  },
-		   |}
+		   |const $configVariableName = $defaultConfigString
 		   |
 		   |const $minimumConfigVariableName = {
 		   |  root: "$rootDirPath",
