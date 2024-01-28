@@ -322,7 +322,8 @@ object SbtVitePlugin extends AutoPlugin {
 	private val testSettings = Seq(
 		viteUseExistingConfig := false,
 
-		viteTargetDirectory := target.value / "sbt-vite-test",
+		viteTargetDirectory :=
+		  target.value / s"scala-${scalaVersion.value}" / "sbt-vite-test",
 
 		viteExecutionDirectory := {
 			(Test / viteDependencyManagement).value match {
@@ -558,7 +559,8 @@ object SbtVitePlugin extends AutoPlugin {
 	private val compileSettings = Seq(
 		viteUseExistingConfig := viteUseExistingConfig.value,
 
-		viteTargetDirectory := target.value / "sbt-vite",
+		viteTargetDirectory :=
+		  target.value / s"scala-${scalaVersion.value}" / "sbt-vite",
 
 		viteExecutionDirectory := {
 			(Compile / viteDependencyManagement).value match {
