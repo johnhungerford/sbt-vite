@@ -141,6 +141,8 @@ viteOtherSources := Seq(
 )
 ```
 
+(See [appendix below](#location))
+
 For any declared source that points to a directory, sbt-vite will copy all the files 
 and directories within it to the build directory prior to running `vite`. Any declared 
 source that is a file will be copied directly to the build directory.
@@ -173,14 +175,14 @@ import '/someStyle.css';
 When dependency management is set to `Manual`, you will be responsible for managing any 
 dependencies needed for vite to bundle your project. sbt-vite will neither install any
 npm packages nor copy over any source directories. Instead, sbt-vite will simply run from 
-`viteProjectRoot` (by default set to the root directory of your project or sub-project), 
-from which it will expect to be able to resolve any imports, whether via local sources or 
-`node_modules`.
+`viteProjectRoot` (by default set to the root directory of your project or sub-project,
+see [appendix below](#location)), from which it will expect to be able to resolve any 
+imports, whether via local sources or `node_modules`.
 
 Note that when using manual mode, `viteBuild` and `test` will fail unless you install
 `vite`, `lodash`, `rollup-plugin-sourcemaps`, and `vite-plugin-scalajs` as dev 
 dependencies. To have sbt-vite install these for you, use `InstallOnly` dependency 
-management (see below).
+management (see [below](#install-only)).
 
 To enable manual dependency management, using the following setting in `build.sbt`:
 
@@ -255,8 +257,67 @@ of one of the following two forms:
 Note that neither of these should be wrapped in `defineConfig`, as this will be called 
 after merging imported overrides.
 
-Note also that the `viteConfigSources` will be merged in order, so the later source in the 
+Note also that the `viteConfigSources` will be merged in order, so later sources in the 
 `Seq` will have precedence over prior sources.
 
 `viteConfigSources` can be scoped to `Compile` and `Test` to provide different 
 customizations for your full build and for tests.
+
+#### Example
+
+The following vite config source provides overrides to support JSX (React), 
+bundle source maps (disabled by default except in tests), and break out several
+library dependencies into separate chunks:
+
+`build.sbt`:
+```sbt
+Compile / viteConfigSources += Location.FromRoot(file("vite.config-build.js"))
+```
+
+'vite.config-build.js':
+```javascript
+import react from '@vitejs/plugin-react';
+
+import sourcemaps from 'rollup-plugin-sourcemaps';
+
+export default (env)=> ({
+  // Array properties will concat on merge, so this will be added
+  // to plugins, instead of overwriting
+  plugins: [
+    react(), 
+  ],
+  build: {
+    sourcemap: true,
+    rollupOptions: {
+      plugins: [sourcemaps()],
+      output: {
+        strict: false,
+        chunkFileNames: '[name]-[hash:10].js',
+        manualChunks: {
+          lodash: ['lodash'],
+          react: ['react'],
+          'react-dom': ['react-dom'],
+          'react-router-dom': ['react-router-dom'],
+        }
+      }
+    },
+  },
+});
+```
+
+## Appendices
+
+### Location
+
+In order to identify directories and files more easily, sbt-vite uses a custom type 
+`Location`, which allows you to specify paths relative to commonly used base directories:
+
+1. `Location.Root`: the base directory of the root project
+2. `Location.ProjectRoot`: the base directory of the currently scoped project
+3. `Location.FromRoot(file)`: provide a `File` relative to `Location.Root`. Note
+   that `file` must have a relative path.
+4. `Location.FromProject(file)`: provide a `File` relative to `Location.ProjectRoot`.
+   `file` must have a relative path.
+5. `Location.FromCwd(file)`: provide a `File` relative to the current working directory
+   (which will presumably always be the same as `Location.Root`). `file` need not 
+   be relative, so use this to specify a location using an absolute path.
