@@ -16,11 +16,11 @@ export default function scalaJSPlugin(scalaJSOutputDir: string): VitePlugin {
         resolveId(source, importer, options) {
             if (source === scalaJsSourcePrefix) {
                 console.log('Source IS prefix! ' + source)
-                return `${scalaJSOutputDir}/main.js`;
+                return `__scalajs/main.js`;
             } else if (source.startsWith(scalaJsSourcePrefix)) {
                 console.log('Source STARTS WITH prefix! ' + source)
                 const path = source.substring(scalaJsSourcePrefix.length);
-                return `${scalaJSOutputDir}/${path}`
+                return `__scalajs/${path}`
             } else {
                 console.log('Other source! ' + source)
                 return null;

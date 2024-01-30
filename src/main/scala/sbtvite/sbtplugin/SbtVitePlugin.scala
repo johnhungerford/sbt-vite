@@ -896,14 +896,11 @@ object SbtVitePlugin extends AutoPlugin {
 
 		viteScalajsTestDirectoryName := viteScalajsDirectoryName.value + "-test",
 
-		viteTestScalajsEntrypoint :=
-		  viteDevTargetDirectory.value / viteScalajsTestDirectoryName.value / "main.js",
-
 		viteProdConfigLocation :=
-		  Location.FromCwd(viteProdExecutionDirectory.value / viteConfigName.value),
+		  Location.FromCwd(viteProdTargetDirectory.value / viteConfigName.value),
 
 		viteDevConfigLocation :=
-		  Location.FromCwd(viteDevExecutionDirectory.value / viteConfigName.value),
+		  Location.FromCwd(viteDevTargetDirectory.value / viteConfigName.value),
 
 		viteTestConfigFile :=
 		  viteDevExecutionDirectory.value / viteTestConfigName.value,
@@ -911,23 +908,45 @@ object SbtVitePlugin extends AutoPlugin {
 		viteBundleDirectoryName := "bundle",
 
 		viteProdBundleDirectory :=
-		  viteProdExecutionDirectory.value / viteBundleDirectoryName.value,
+		  viteProdTargetDirectory.value / viteBundleDirectoryName.value,
 
 		viteProdBundleLocation := Location.FromCwd(viteProdBundleDirectory.value),
 
 		viteDevBundleDirectory :=
-		  viteDevExecutionDirectory.value / viteBundleDirectoryName.value,
+		  viteDevTargetDirectory.value / viteBundleDirectoryName.value,
 
 		viteDevBundleLocation := Location.FromCwd(viteDevBundleDirectory.value),
 
-		viteTestBundleEntrypoint :=
-		  viteDevExecutionDirectory.value / viteTestBundleDirectoryName.value / "main.js",
+		viteTestBundleEntrypoint := {
+			viteDevTargetDirectory.value / viteTestBundleDirectoryName.value / "main.js"
+		},
 
-		viteProdScalajsEntrypoint :=
-		  viteProdExecutionDirectory.value / viteScalajsDirectoryName.value / "main.js",
+		viteProdScalajsEntrypoint := {
+			viteDependencyManagement.value match {
+				case DependencyManagement.Managed(_) =>
+					viteProdExecutionDirectory.value / viteScalajsDirectoryName.value / "main.js"
+				case _ =>
+					(Compile / fullLinkJS / scalaJSLinkerOutputDirectory).value / "main.js"
+			}
+		},
 
-		viteDevScalajsEntrypoint :=
-		  viteDevExecutionDirectory.value / viteScalajsDirectoryName.value / "main.js",
+		viteDevScalajsEntrypoint := {
+			viteDependencyManagement.value match {
+				case DependencyManagement.Managed(_) =>
+					viteDevExecutionDirectory.value / viteScalajsDirectoryName.value / "main.js"
+				case _ =>
+					(Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value / "main.js"
+			}
+		},
+
+		viteTestScalajsEntrypoint := {
+			viteDependencyManagement.value match {
+				case DependencyManagement.Managed(_) =>
+					viteDevTargetDirectory.value / viteScalajsTestDirectoryName.value / "main.js"
+				case _ =>
+					(Test / fastLinkJS / scalaJSLinkerOutputDirectory).value / "main.js"
+			}
+		},
 
 		viteConfigName := "vite.config.js",
 
@@ -942,7 +961,9 @@ object SbtVitePlugin extends AutoPlugin {
 
 		viteEnvironment := Map.empty,
 		viteProdEnvironment := Map.empty,
-		viteDevEnvironment := Map.empty,
+		viteDevEnvironment := Map(
+			"NODE_ENV" -> "development",
+		),
 
 		viteExtraArgs := Nil,
 		viteProdExtraArgs := Nil,
@@ -1136,9 +1157,6 @@ object SbtVitePlugin extends AutoPlugin {
 
 		viteGenerateTestConfig := {
 			val rootDirPath = viteDevExecutionDirectory.value.toPath
-
-			println(s"ROOT DIR PATH!!\n\n$rootDirPath\n\n")
-
 			val outDir = viteTestBundleEntrypoint.value.toPath.getParent.toAbsolutePath
 			val input = viteDevExecutionDirectory
 			  .value
@@ -1150,7 +1168,7 @@ object SbtVitePlugin extends AutoPlugin {
 			val linkOutDir = viteDevExecutionDirectory
 			  .value
 			  .relativize(
-				  viteTestScalajsEntrypoint
+				  viteDevScalajsEntrypoint
 					.value
 					.getParentFile
 			  ).get
@@ -1169,7 +1187,8 @@ object SbtVitePlugin extends AutoPlugin {
 					Some(input.toString),
 					outDir.toString,
 					requiredImports,
-					List("sourcemaps()", s"""scalaJSPlugin('$linkOutDir')"""),
+					List(s"""scalaJSPlugin('$linkOutDir')"""),
+					List("sourcemaps()"),
 				).fold(err => throw new IllegalArgumentException(err.message), identity)
 
 			val configFile = viteTestConfigFile.value

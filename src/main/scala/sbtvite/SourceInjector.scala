@@ -16,7 +16,7 @@ object SourceInjector {
 
 object SourceInjectorImpl extends SourceInjector {
 	private def injectFile(file: sbt.File, target: sbt.File): Either[String, Unit] = Try {
-		println(s"Injecting: ${file}")
+		println(s"Injecting ${file} into ${target}")
 		if (file.exists()) {
 			println("Exists!")
 			if (!target.exists()) sbt.IO.createDirectory(target)

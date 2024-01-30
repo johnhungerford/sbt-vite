@@ -1,0 +1,31 @@
+.component-display {
+  position: relative;
+  width: calc(100% - 3px);
+  height: 45px;
+  box-sizing: border-box;
+  min-width: 125px;
+  text-align: right;
+  border: 1px solid black;
+  margin: -.5px;
+  padding: 5px;
+  overflow: hidden;
+  background-color: lightgreen;
+}
+
+.operation-view {
+  position: absolute;
+  left: 20px;
+  text-align: left;
+  top: calc(50% - 12px);
+  width: 30px;
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.number-view {
+  position: absolute;
+  right: 20px;
+  top: calc(50% - 15px);
+  font-weight: bold;
+  font-size: 30px;
+}

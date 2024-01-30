@@ -1,0 +1,42 @@
+.component-button {
+  display: inline-block;
+  width: calc((100% / 4) - 2px);
+  min-width: 30px;
+  height: 38px;
+  min-height: 30px;
+  border: 1px solid black;
+  text-align: center;
+  margin: -.5px;
+  background-color: lightgray;
+  position: relative;
+}
+
+.invisible-elem {
+  visibility: hidden;
+}
+
+.dark {
+  background-color: black;
+}
+
+.component-button:hover {
+  cursor: pointer;
+  background-color: grey;
+  z-index: 100;
+  -webkit-user-select: none;  /* Chrome all / Safari all */
+  -moz-user-select: none;     /* Firefox all */
+  -ms-user-select: none;      /* IE 10+ */
+  user-select: none;
+}
+
+.component-button:active {
+  background-color: rgb(238, 238, 238);
+}
+
+.button-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+}
