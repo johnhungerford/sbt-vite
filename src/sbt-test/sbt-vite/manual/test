@@ -1,3 +1,7 @@
+$ pause
+
+> viteBuildDev
+
 > test
-> viteGenerateConfig
-> viteBuild
+
+> viteBuildProd
