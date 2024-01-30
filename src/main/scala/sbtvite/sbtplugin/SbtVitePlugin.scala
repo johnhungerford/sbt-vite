@@ -84,7 +84,7 @@ object SbtVitePlugin extends AutoPlugin {
 
 		/**
 		 * Where vite will persist its build when fully optimized. Defaults to:
-		 * [project-dir]/target/scala-[x.x.x]/sbt-vite-full/bundle/
+		 * [project-dir]/target/scala-[x.x.x]/sbt-vite-prod/bundle/
 		 *
 		 * @see [[Location]]
 		 */
@@ -94,7 +94,7 @@ object SbtVitePlugin extends AutoPlugin {
 
 		/**
 		 * Where vite will persist its un-optimized (dev) build. Defaults to:
-		 * [project-dir]/target/scala-[x.x.x]/sbt-vite-fast/bundle/
+		 * [project-dir]/target/scala-[x.x.x]/sbt-vite-dev/bundle/
 		 *
 		 * @see [[Location]]
 		 */
@@ -104,7 +104,7 @@ object SbtVitePlugin extends AutoPlugin {
 
 		/**
 		 * Where generated vite configuration for fully optimized builds will be kept.
-		 * Defaults to: [project-dir]/target/scala-[x.x.x]/sbt-vite-full/vite.config.js
+		 * Defaults to: [project-dir]/target/scala-[x.x.x]/sbt-vite-prod/vite.config.js
 		 */
 		val viteProdConfigLocation = settingKey[Location](
 			"Location of generated vite config for fully optimized (production) builds"
@@ -112,7 +112,7 @@ object SbtVitePlugin extends AutoPlugin {
 
 		/**
 		 * Where generated vite configuration for un-optimized (dev) builds will be kept.
-		 * Defaults to: [project-dir]/target/scala-[x.x.x]/sbt-vite-fast/vite.config.js
+		 * Defaults to: [project-dir]/target/scala-[x.x.x]/sbt-vite-full/vite.config.js
 		 */
 		val viteDevConfigLocation = settingKey[Location](
 			"Location of generated vite config for un-optimized (development) builds"
@@ -841,7 +841,7 @@ object SbtVitePlugin extends AutoPlugin {
 	override lazy val projectSettings = Seq(
 		viteDependencyManagement := DependencyManagement.Managed(NpmManager.Npm),
 
-		viteVersion := "^5.0.12",
+		viteVersion := "^4.4.9",
 
 		viteProjectRoot := Location.ProjectRoot,
 
@@ -855,7 +855,7 @@ object SbtVitePlugin extends AutoPlugin {
 			Seq(
 			  "lodash" -> "^4.17.21",
 			  "rollup-plugin-sourcemaps" -> "^0.6.3",
-			  "vite" -> (Test / viteVersion).value,
+			  "vite" -> viteVersion.value,
 			),
 		viteEnvironment := Map.empty,
 		npmEnvironment := Map.empty,
@@ -867,10 +867,10 @@ object SbtVitePlugin extends AutoPlugin {
 		pnpmExtraArgs := Nil,
 
 		viteProdTargetDirectory :=
-		  target.value / s"scala-${scalaVersion.value}" / "sbt-vite-full",
+		  target.value / s"scala-${scalaVersion.value}" / "sbt-vite-prod",
 
 		viteDevTargetDirectory :=
-		  target.value / s"scala-${scalaVersion.value}" / "sbt-vite-fast",
+		  target.value / s"scala-${scalaVersion.value}" / "sbt-vite-dev",
 
 		viteProdExecutionDirectory := {
 			viteDependencyManagement.value match {
@@ -1445,7 +1445,7 @@ object SbtVitePlugin extends AutoPlugin {
 		viteBuildDev := viteBuildDev
 		  .dependsOn(
 			  viteGenerateDevConfig,
-			  viteInstallDependenciesProd,
+			  viteInstallDependenciesDev,
 			  vitePrepareDevSources,
 		  )
 		  .value,
@@ -1572,7 +1572,7 @@ object SbtVitePlugin extends AutoPlugin {
 		viteDevServer := viteDevServer
 		  .dependsOn(
 			  viteGenerateDevConfig,
-			  viteInstallDependenciesProd,
+			  viteInstallDependenciesDev,
 			  vitePrepareDevSources,
 		  )
 		  .value,
