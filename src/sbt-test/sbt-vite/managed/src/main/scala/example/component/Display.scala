@@ -4,7 +4,6 @@ import scalajs.js
 import scalajs.js.annotation.*
 import japgolly.scalajs.react.*
 import example.model.{Operation, Value}
-import example.util.FormatNumber
 
 @js.native
 @JSImport("/component/Display.jsx", JSImport.Default)

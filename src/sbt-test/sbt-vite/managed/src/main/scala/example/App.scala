@@ -63,7 +63,7 @@ object App {
 			.renderBackend
 			.build
 
-	@JSExportTopLevel("App")
+	@JSExportTopLevel("default")
 	val rawApp =
 		component
 		  .cmapCtorProps[Unit](identity) // Change props from JS to Scala

@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
 	"io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test,
 )
 libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "2.1.1"
+libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.2.0"
 
 enablePlugins(ScalaJSPlugin, SbtVitePlugin)
 

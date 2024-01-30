@@ -20,7 +20,7 @@ object FormatNumber:
 	 * @param numberString number encoded in a string
 	 * @returns {string} A version of strin with commas added as appropriate
 	 */
-	@JSExportTopLevel("formatNumberString", "utils")
+	@JSExportTopLevel("formatNumberString")
 	def formatNumberString(numberString: String): String = numberString match {
 		case Value.NonDecimal() => addCommasNonDecimal(numberString)
 		case Value.Decimal(nonDecimal, decimal) =>
