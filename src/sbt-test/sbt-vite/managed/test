@@ -1,2 +1,57 @@
+> clean
+> viteBuildDev
+
+$ exists target/scala-3.3.1/sbt-vite-dev/package.json
+$ exists target/scala-3.3.1/sbt-vite-dev/node_modules
+$ exists target/scala-3.3.1/sbt-vite-dev/vite.config.js
+$ exists target/scala-3.3.1/sbt-vite-dev/customVitePlugin.ts
+$ exists target/scala-3.3.1/sbt-vite-dev/index.html
+$ exists target/scala-3.3.1/sbt-vite-dev/main.jsx
+$ exists target/scala-3.3.1/sbt-vite-dev/bundle/index.js
+$ exists target/scala-3.3.1/sbt-vite-dev/bundle/index.html
+$ exists target/scala-3.3.1/sbt-vite-dev/bundle/assets
+$ exists target/scala-3.3.1/sbt-vite-dev/__scalajs/main.js
+$ exists target/scala-3.3.1/sbt-vite-dev/component
+$ exists target/scala-3.3.1/sbt-vite-dev/public
+$ exists target/scala-3.3.1/sbt-vite-dev/app.css
+$ exists target/scala-3.3.1/sbt-vite-dev/buttonPanel.css
+
+-$ exists target/scala-3.3.1/sbt-vite-dev/vite.config-test.js
+-$ exists target/scala-3.3.1/sbt-vite-dev/__scalajs-test
+-$ exists target/scala-3.3.1/sbt-vite-dev/bundle-test
+-$ exists target/scala-3.3.1/sbt-vite-dev/bundle-test/main.js
+
 > test
-> viteBuild
+
+$ exists target/scala-3.3.1/sbt-vite-dev/vite.config-test.js
+$ exists target/scala-3.3.1/sbt-vite-dev/__scalajs-test
+$ exists target/scala-3.3.1/sbt-vite-dev/__scalajs-test/main.js
+$ exists target/scala-3.3.1/sbt-vite-dev/bundle-test
+$ exists target/scala-3.3.1/sbt-vite-dev/bundle-test/main.js
+
+-$ exists target/scala-3.3.1/sbt-vite-prod/vite.config.js
+-$ exists target/scala-3.3.1/sbt-vite-prod/customVitePlugin.ts
+-$ exists target/scala-3.3.1/sbt-vite-prod/index.html
+-$ exists target/scala-3.3.1/sbt-vite-prod/main.jsx
+-$ exists target/scala-3.3.1/sbt-vite-prod/bundle
+-$ exists target/scala-3.3.1/sbt-vite-prod/__scalajs/main.js
+-$ exists target/scala-3.3.1/sbt-vite-prod/component
+-$ exists target/scala-3.3.1/sbt-vite-prod/public
+-$ exists target/scala-3.3.1/sbt-vite-prod/app.css
+-$ exists target/scala-3.3.1/sbt-vite-prod/buttonPanel.css
+
+> viteBuildProd
+
+$ exists target/scala-3.3.1/sbt-vite-prod/vite.config.js
+$ exists target/scala-3.3.1/sbt-vite-prod/customVitePlugin.ts
+$ exists target/scala-3.3.1/sbt-vite-prod/index.html
+$ exists target/scala-3.3.1/sbt-vite-prod/main.jsx
+$ exists target/scala-3.3.1/sbt-vite-prod/bundle/index.js
+$ exists target/scala-3.3.1/sbt-vite-prod/bundle/index.html
+$ exists target/scala-3.3.1/sbt-vite-prod/bundle/assets
+$ exists target/scala-3.3.1/sbt-vite-prod/__scalajs/main.js
+$ exists target/scala-3.3.1/sbt-vite-prod/component
+$ exists target/scala-3.3.1/sbt-vite-prod/public
+$ exists target/scala-3.3.1/sbt-vite-prod/app.css
+$ exists target/scala-3.3.1/sbt-vite-prod/buttonPanel.css
+

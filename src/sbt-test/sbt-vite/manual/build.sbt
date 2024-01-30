@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
 	"io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.5.0" % Test,
 )
 libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "2.1.1"
+libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.2.0"
 
 enablePlugins(ScalaJSPlugin, SbtVitePlugin)
 
@@ -21,14 +22,25 @@ viteOtherSources += Location.FromProject(file("src/main/javascript"))
 viteOtherSources += Location.FromProject(file("src/main/entrypoint"))
 viteOtherSources += Location.FromProject(file("src/main/styles"))
 
-viteVersion := "^5.0.0"
-
-npmDependencies ++= Seq(
-	"react" -> "^18.2.0",
-	"react-dom" -> "^18.2.0",
-	"prop-types" -> "^15.8.1",
-	"react-toastify" -> "^6.0.8",
-)
-
 testFrameworks += new TestFramework("utest.runner.Framework")
 
+lazy val installDeps = taskKey[Unit]("Install npm dependencies on startup")
+
+installDeps := {
+	import scala.sys.process.*
+
+	"npm install" !
+}
+
+lazy val startupTransition: State => State = { s: State =>
+	"installDeps" :: s
+}
+
+Global / onLoad := {
+	val old = (Global / onLoad).value
+	// compose the new transition on top of the existing one
+	// in case your plugins are using this hook.
+	startupTransition compose old
+}
+
+viteDependencyManagement := DependencyManagement.Manual
