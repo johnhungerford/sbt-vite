@@ -43,12 +43,12 @@ Add the following files to the root directory of your project or sub-project:
 
 If your Scala.js project is runnable (i.e., if it has a `def main` entrypoint and
 `scalaJSUseMainModuleInitializer := true` in build.sbt), you can simply import the 
-application to be run as follows
+application to be run as follows:
 
 `main.js`:
 ```javascript
-// 'scalajs:main.js' will be resolved by vite to the output of the Scala.js linker
-import 'scalajs:main.js'
+// 'scalajs:' will be resolved by vite to the output of the Scala.js linker
+import 'scalajs:'
 ```
 
 Otherwise you can simply import any exported objects from your Scala.js project as 
@@ -56,7 +56,7 @@ follows:
 
 `main.js`:
 ```javascript
-import { someLib, otherLib } from 'scalajs:main.js';
+import { someLib, otherLib } from 'scalajs:';
 
 ...
 
@@ -70,12 +70,21 @@ Once you have your html and js entrypoints in place, you can run the following t
 generate a web bundle:
 
 ```shell
-sbt viteBuild
+sbt viteBuildProd
 ```
 
 This will compile your project, generate an appropriate vite configuration, and run 
 vite on all artifacts. By default, the bundle will persisted at
-`[project-directory]/target/scala-[x.x.x]/sbt-vite/bundle`
+`[project-directory]/target/scala-[x.x.x]/sbt-vite-prod/bundle`. Use `sbt viteBuildDev` 
+to run build in development mode and skip optimizations.
+
+To launch a development server, run:
+
+```shell
+sbt viteDevServer
+```
+
+For hot reloading, you will have to run `sbt ~vitePrepareDevSources`
 
 ### Testing
 

@@ -5,7 +5,6 @@ import scala.scalajs.js.annotation.*
 import example.model.Value
 
 object FormatNumber:
-
 	// Inefficient but strings won't be too big
 	def addCommasNonDecimal(numberString: String): String =
 		numberString
@@ -21,7 +20,7 @@ object FormatNumber:
 	 * @param numberString number encoded in a string
 	 * @returns {string} A version of strin with commas added as appropriate
 	 */
-	@JSExportTopLevel("formatNumberString")
+	@JSExportTopLevel("formatNumberString", "utils")
 	def formatNumberString(numberString: String): String = numberString match {
 		case Value.NonDecimal() => addCommasNonDecimal(numberString)
 		case Value.Decimal(nonDecimal, decimal) =>
