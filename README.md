@@ -9,7 +9,7 @@ This plugin requires sbt 1.0.0+.
 To use sbt-vite in your project, add the following line to `projects/plugins.sbt`:
 
 ```sbt
-addSbtPlugin("io.github.johnhungerford.sbt.vite" % "sbt-vite" % "0.0.8")
+addSbtPlugin("io.github.johnhungerford.sbt.vite" % "sbt-vite" % "0.0.9")
 ```
 
 In `build.sbt`, include `SbtVitePlugin` in `.enablePlugins(...)` in any Scala.js project 
