@@ -11,6 +11,7 @@ Scala.js and JavaScript.
 
 ## Project structure
 
+```
 ├── README.md
 ├── build.sbt
 ├── project
@@ -23,6 +24,7 @@ Scala.js and JavaScript.
      │     └── styles
      └── test
            └── scala
+```
 
 Notice that we have our `entrypoint` artifacts in the source directory
 (src/main/entrypoint). This includes the `index.html` that vite will use to 
