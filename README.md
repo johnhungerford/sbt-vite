@@ -326,6 +326,12 @@ export default (env)=> ({
 });
 ```
 
+## Examples
+
+See [src/sbt-test/sbt-vite](src/sbt-test/sbt-vite) for examples projects. Each one 
+corresponds to one of the three supported dependency management modes. Each also includes 
+a `README.md` with further documentation.
+
 ## Appendices
 
 ### Location
