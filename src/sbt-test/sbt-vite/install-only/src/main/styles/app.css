@@ -1,0 +1,24 @@
+body {
+  position: relative;
+  margin: 0;
+  height: 100vh;
+}
+.component-webcalc-app {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 20px;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+.webcalc-container {
+  position: relative;
+  white-space: nowrap;
+  margin: auto;
+  max-width: 350px;
+  min-width: 129px;
+}

@@ -1,0 +1,15 @@
+{
+  "name": "manual",
+  "version": "1.0.0",
+  "description": "Example sbt-vite project with manual dependency management",
+  "type": "module",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-toastify": "^6.2.0"
+  },
+  "devDependencies": {}
+}
