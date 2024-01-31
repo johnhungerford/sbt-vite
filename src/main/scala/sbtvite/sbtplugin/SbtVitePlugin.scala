@@ -376,6 +376,14 @@ object SbtVitePlugin extends AutoPlugin {
 		val viteGenerateDevServerScript = taskKey[Unit](
 			"Generate a script to start a vite dev server without using sbt"
 		)
+
+		/**
+		 * Moves sources to the build directory, if dependency management is
+		 * set to "managed"
+		 */
+		val vitePrepareDevSources = taskKey[Unit](
+			"Moves sources to the build directory, if dependency management is set to \"managed\"",
+		)
 	}
 
 	// Private settings
@@ -516,16 +524,6 @@ object SbtVitePlugin extends AutoPlugin {
 	 */
 	private[sbtvite] val vitePrepareProdSources = TaskKey[Unit](
 		"vitePrepareProdSources",
-		"Moves sources to the build directory, if dependency management is set to \"managed\"",
-		KeyRanks.Invisible,
-	)
-
-	/**
-	 * Moves sources to the build directory, if dependency management is
-	 * set to "managed"
-	 */
-	private[sbtvite] val vitePrepareDevSources = TaskKey[Unit](
-		"vitePrepareDevSources",
 		"Moves sources to the build directory, if dependency management is set to \"managed\"",
 		KeyRanks.Invisible,
 	)
