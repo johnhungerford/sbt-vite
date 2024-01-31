@@ -943,7 +943,6 @@ object SbtVitePlugin extends AutoPlugin {
 			}
 
 			val globs = SourceInjector.impl.sourceGlobs(sources)
-			globs.foreach(println)
 			globs
 		},
 
@@ -990,7 +989,6 @@ object SbtVitePlugin extends AutoPlugin {
 			}
 
 			val globs = SourceInjector.impl.sourceGlobs(sources)
-			globs.foreach(println)
 			globs
 		},
 

@@ -32,16 +32,13 @@ inThisBuild(List(
 ))
 setPluginVersion := {
   IO.listFiles(file("src/sbt-test/sbt-vite")).toList.foreach(file => {
-    println(file)
     if (file.isDirectory) {
-      println
       val pluginsSbt =
         s"""{
 		  |  addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.15.0")
 		  |  addSbtPlugin("io.github.johnhungerford.sbt.vite" % "sbt-vite" % "${version.value}")
           |}""".stripMargin
       Try(IO.write(file / "project" / "plugins.sbt", pluginsSbt))
-      println(IO.read(file / "project" / "plugins.sbt"))
     }
   })
 }

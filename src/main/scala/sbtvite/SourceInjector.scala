@@ -16,13 +16,10 @@ object SourceInjector {
 
 object SourceInjectorImpl extends SourceInjector {
 	private def injectFile(file: sbt.File, target: sbt.File): Either[String, Unit] = Try {
-		println(s"Injecting ${file} into ${target}")
 		if (file.exists()) {
-			println("Exists!")
 			if (!target.exists()) sbt.IO.createDirectory(target)
 			if (!target.isDirectory) throw new IllegalArgumentException(s"destination is not directory: $target")
 			if (file.isDirectory) {
-				println("Directory!")
 				sbt.IO.copyDirectory(file, target)
 			} else sbt.IO.copyFile(file, target)
 		} else println(s"WARNING: source file does not exist: $file")

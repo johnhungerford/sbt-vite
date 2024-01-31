@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import { formatNumberString } from 'scalajs:'
+import { formatNumberString } from 'scalajs:utils.js'
 
 import './display.css'
 

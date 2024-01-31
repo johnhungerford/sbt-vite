@@ -1,7 +1,8 @@
-# Example: DependencyManagement.Managed
+# Example: DependencyManagement.Manual
 
-This project uses sbt-vite in "managed" mode to build a complex multi-language 
-frontend project.
+This project uses sbt-vite in "install-only" mode to build a complex multi-language
+frontend project. Install-only means that sbt-vite will not manage your sources but will 
+expect a `package.json` file 
 
 The project is a calculator SPA built using React. Most of it is written in Scala.js,
 but the button and display components are JavaScript, as is the top-level script that
@@ -9,64 +10,47 @@ mounts the top-level react component. The display component also imports a utili
 exported from Scala.js. It thus demonstrates bidirectional interoperability between
 Scala.js and JavaScript.
 
-## Project structure
+## Build structure
 
+```
 ├── README.md
 ├── build.sbt
 ├── project
 ├── test
+├── package.json
+├── package-lock.json
+├── index.html
+├── main.jsx
+├── node_modules
+├── public
+│       └── logo.png
 └── src
      ├── main
-     │     ├── entrypoint
      │     ├── javascript
      │     ├── scala
      │     └── styles
      └── test
            └── scala
+```
 
-Notice that we have our `entrypoint` artifacts in the source directory
-(src/main/entrypoint). This includes the `index.html` that vite will use to 
-to generate the bundle. In a typical project, these artifacts would be at the 
-project root, but since we are in "managed" mode, we can add 
-`src/main/entrypoint` as a managed source (see build settings, below), and 
-vite will treat its contents as though they are at the project root.
-
-Notice also that there is no `package.json` or `node_modules` here: npm 
-dependencies are managed entirely behind the scenes.
+Unlike the "managed" example, we need to keep all the usual web development
+requirements in our project root: `package[-lock].json`, `node_modules`,
+and the vite entry points `index.html`/`main.jsx` (along with their static
+assets in `public`).
 
 ## Build settings
 
-The settings specific to sbt-vite are as follows:
+The only setting specific to sbt-vite is:
 
 ```sbt
-viteOtherSources += Location.FromProject(file("src/main/javascript"))
-viteOtherSources += Location.FromProject(file("src/main/entrypoint"))
-viteOtherSources += Location.FromProject(file("src/main/styles"))
-
-npmDependencies ++= Seq(
-	"react" -> "^18.2.0",
-	"react-dom" -> "^18.2.0",
-	"prop-types" -> "^15.8.1",
-	"react-toastify" -> "^6.0.8",
-)
+viteDependencyManagement := DependencyManagement.Manual
 ```
-
-In `viteOtherSources` we include a directory containing some javascript code,
-a directory with our entry points (the html file and the top-level script), and a 
-directory containing some styles (css).
-
-In `npmDependencies`, we include the various javascript libraries that our Scala.js 
-and javascript code depends on. Notice we don't specify any `npmDevDependencies`. 
-The JS dependencies needed for development (e.g., vite, lodash), are included by default.
-
-Note that we don't have to set `viteDependencyManagement` since it defaults to 
-`DependencyManagement.Managed(NpmManager.Npm)`.
 
 ## Dependency resolution
 
 ### NPM dependencies
 
-In both Scala.js and javascript files, npm dependencies are imported in the 
+In both Scala.js and javascript files, npm dependencies are imported in the
 usual way, e.g.,
 
 ```javascript
@@ -76,46 +60,40 @@ import PropTypes from 'prop-types';
 ...
 ```
 
-sbt-vite will handle the installation of these dependencies within the build context
+All of these dependencies must be installed in the project root prior to building.
 
 ### Local dependencies
 
-Dependencies from any of the directories included in `viteOtherSources` can simply be 
-imported relative to those directories:
+To import local dependencies into your Scala.js source code, the imported paths must be
+relative to the sbt setting `viteProjectRoot`, which defaults to the project root:
 
 ```scala
 // From src/main/scala/example/components/Display.scala
 @js.native
-@JSImport("/buttonPanel.css", JSImport.Namespace)
+@JSImport("/src/main/styles/buttonPanel.css", JSImport.Namespace)
 object ButtonPanelCss extends js.Object
 
 @js.native
-@JSImport("/component/Button.jsx", JSImport.Default)
+@JSImport("/src/main/javascript/component/Button.jsx", JSImport.Default)
 object ButtonRaw extends js.Object
 ```
 
-Since `Button.jsx` is in `src/main/javascript/component`, which is included in
-`viteOtherSources`, we can import it without referring to `src/main/javascript`.
-(NB: the leading slash is required to work properly.) Similarly, `/buttonPanel.css` 
-is resolvable because it is in `src/main/styles`, which is included in 
-`viteOtherSources`.
-
 ### Scala.js dependencies
 
-The above example shows how a Scala.js file can import a non-Scala.js source 
-declared in `viteOtherSources`, but what about importing in the other direction?
-That is, how do import from Scala.js into a JavaScript or TypeScript file? 
+The above example shows how a Scala.js file can import a non-Scala.js, but what
+about importing in the other direction? That is, how do import from Scala.js into
+a JavaScript or TypeScript file?
 
-This can be accomplished by prefixing imports with `scalajs:`. Vite will resolve this 
-as the output directory of `fullLinkJS` or `fastLinkJS` (depending on whether you are 
-using `viteBuildProd` or `viteBuildDev`). When there is nothing after the colon, it 
+This can be accomplished by prefixing imports with `scalajs:`. Vite will resolve this
+as the output directory of `fullLinkJS` or `fastLinkJS` (depending on whether you are
+using `viteBuildProd` or `viteBuildDev`). When there is nothing after the colon, it
 is equivalent to `scalajs:main.js` (`main.js` is the main output of the Scala.js linker).
 
-For instance, the entrypoint script in this project pulls the top level react app from 
+For instance, the entrypoint script in this project pulls the top level react app from
 our Scala.js source as follows:
 
 ```javascript
-// From src/main/entrypoint/main.jsx
+// From main.jsx (project root)
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -125,7 +103,7 @@ const root = createRoot(document.getElementById('app'))
 root.render(<App />, );
 ```
 
-The above import will work because our Scala.js code includes a top-level default 
+The above import will work because our Scala.js code includes a top-level default
 export:
 
 ```scala
@@ -156,7 +134,7 @@ It is also possible to separate Scala.js exports into separate modules by specif
 ```
 
 Since we specify a `moduleId` of "utils" in the second parameter of
-`JSExportTopLevel`, the Scala.js linker will create a second file called `utils.js` 
+`JSExportTopLevel`, the Scala.js linker will create a second file called `utils.js`
 that exports the annotated function. We can then import it as follows:
 
 ```javascript
@@ -165,6 +143,16 @@ import { formatNumberString } from 'scalajs:utils.js'
 ```
 
 ## Building and testing
+
+Prior to building, we need to make sure all dependencies are in place. All of the 
+dependencies need for our project are declared in `package.json`. Since this project 
+is using "install-only" dependency management, sbt-vite will install these packages, 
+along with any packages in the `npmDependencies` and `npmDevDependencies` sbt settings.
+
+Notice, for instance, that unlike the "manual" example, `package.json` does not 
+include any of the dev dependencies needed by sbt-vite. These are included by default in
+`npmDevDependencies` and will be added automatically when you run build. Keep in mind 
+that this will mutate `package.json`.
 
 To build the project, run
 
@@ -193,7 +181,7 @@ sbt test
 ```
 
 This will bundle the compiled test code with all dependencies, so feel free to
-include any dependencies in your unit tests! Just be sure you are using an 
+include any dependencies in your unit tests! Just be sure you are using an
 appropriate `jsEnv` when testing code meant to run in the browser.
 
 Finally, you can run a dev server by first generating a script:
@@ -215,5 +203,5 @@ shell:
 sbt "~vitePrepareDevSources"
 ```
 
-This will detect updates to your Scala.js code, compile them, and inject them into the 
+This will detect updates to your Scala.js code, compile them, and inject them into the
 build environment so that the vite dev server will update.
