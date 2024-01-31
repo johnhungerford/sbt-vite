@@ -58,8 +58,12 @@ object NpmNpmExecutor extends NpmExecutor {
 		val baseCommand =
 			s"npm install $additionalOptionsStr"
 		val existingCommand = baseCommand
-		val command = baseCommand + " " + NpmExecutor.depsString(deps.toSeq)
+		val command = baseCommand + " --save " + NpmExecutor.depsString(deps.toSeq)
 		val devCommand = baseCommand + " --save-dev " + NpmExecutor.depsString(devDeps.toSeq)
+
+		println(existingCommand)
+		println(command)
+		println(devCommand)
 
 		cwd.foreach(sbt.IO.createDirectory)
 		val existingResult = Process(existingCommand, cwd, environment.toSeq*).run().exitValue()

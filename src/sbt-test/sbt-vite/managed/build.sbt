@@ -21,8 +21,6 @@ viteOtherSources += Location.FromProject(file("src/main/javascript"))
 viteOtherSources += Location.FromProject(file("src/main/entrypoint"))
 viteOtherSources += Location.FromProject(file("src/main/styles"))
 
-viteVersion := "^5.0.0"
-
 npmDependencies ++= Seq(
 	"react" -> "^18.2.0",
 	"react-dom" -> "^18.2.0",

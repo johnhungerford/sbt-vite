@@ -78,13 +78,22 @@ vite on all artifacts. By default, the bundle will persisted at
 `[project-directory]/target/scala-[x.x.x]/sbt-vite-prod/bundle`. Use `sbt viteBuildDev` 
 to run build in development mode and skip optimizations.
 
-To launch a development server, run:
+To launch a development server, you can run:
 
 ```shell
 sbt viteDevServer
 ```
 
-For hot reloading, you will have to run `sbt ~vitePrepareDevSources`
+or generate a script to launch a dev server without having to use the sbt console:
+
+```shell
+sbt viteGenerateDevServerScript
+```
+
+This will output a shell script `start-dev-server.sh` at your project root. It's 
+recommended to use this script to launch the dev server rather than sbt so that you
+can use your sbt console to run `~vitePrepareDevSources`. This will update your build
+as you edit your Scala.js files so that vite can reload the page.
 
 ### Testing
 
@@ -193,6 +202,9 @@ Note that when using manual mode, `viteBuild` and `test` will fail unless you in
 dependencies. To have sbt-vite install these for you, use `InstallOnly` dependency 
 management (see [below](#install-only)).
 
+Note that sbt-vite currently supports vite versions only up to `4.5.2`. Vite 5 fails 
+to resolve Scala.js outputs properly.
+
 To enable manual dependency management, using the following setting in `build.sbt`:
 
 ```sbt
@@ -254,7 +266,7 @@ one or more configuration scripts that will be merged with the defaults, allowin
 you to override various settings. Note that the following configuration properties
 cannot be overridden:
 1. `root`
-2. `build.rollupOptions.input`, and 
+2. `build.rollupOptions.input` (for tests only), and 
 3. `build.rollupOptions.output.dir`
 
 `viteConfigSources` must specify valid javascript files that provide a default export 
@@ -280,7 +292,7 @@ library dependencies into separate chunks:
 
 `build.sbt`:
 ```sbt
-Compile / viteConfigSources += Location.FromRoot(file("vite.config-build.js"))
+viteProdConfigSources += Location.FromRoot(file("vite.config-build.js"))
 ```
 
 'vite.config-build.js':

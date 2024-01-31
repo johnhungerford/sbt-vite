@@ -28,8 +28,9 @@ lazy val installDeps = taskKey[Unit]("Install npm dependencies on startup")
 
 installDeps := {
 	import scala.sys.process.*
-
-	"npm install" !
+	val rootFile = file(".")
+	Process("rm -rf node_modules", Some(rootFile)).run().exitValue()
+	Process("npm install", Some(rootFile)).run().exitValue()
 }
 
 lazy val startupTransition: State => State = { s: State =>
