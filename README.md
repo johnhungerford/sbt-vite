@@ -9,7 +9,7 @@ This plugin requires sbt 1.0.0+.
 To use sbt-vite in your project, add the following line to `projects/plugins.sbt`:
 
 ```sbt
-addSbtPlugin("io.github.johnhungerford.sbt.vite" % "sbt-vite" % "0.0.9")
+addSbtPlugin("io.github.johnhungerford.sbt.vite" % "sbt-vite" % "0.0.11")
 ```
 
 In `build.sbt`, include `SbtVitePlugin` in `.enablePlugins(...)` in any Scala.js project 
@@ -204,6 +204,10 @@ management (see [below](#install-only)).
 
 Note that sbt-vite currently supports vite versions only up to `4.5.2`. Vite 5 fails 
 to resolve Scala.js outputs properly.
+
+While `viteOtherSources` is not strictly speaking necessary in manual mode, you should 
+still set it so that sbt-vite will watch those directories for code changes. Otherwise, 
+sbt will not incrementally update builds unless Scala.js sources change.
 
 To enable manual dependency management, using the following setting in `build.sbt`:
 

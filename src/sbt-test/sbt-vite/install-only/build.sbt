@@ -18,9 +18,11 @@ scalaJSLinkerConfig ~= {
 	 .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("gsp")))
 }
 
-viteOtherSources += Location.FromProject(file("src/main/javascript"))
-viteOtherSources += Location.FromProject(file("src/main/entrypoint"))
-viteOtherSources += Location.FromProject(file("src/main/styles"))
+viteOtherSources ++= Seq(
+	Location.FromProject(file("src/main/javascript")),
+	Location.FromProject(file("src/main/entrypoint")),
+	Location.FromProject(file("src/main/styles")),
+)
 
 testFrameworks += new TestFramework("utest.runner.Framework")
 

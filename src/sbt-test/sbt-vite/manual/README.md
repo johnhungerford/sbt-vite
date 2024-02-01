@@ -39,11 +39,21 @@ assets in `public`).
 
 ## Build settings
 
-The only setting specific to sbt-vite is:
+The only settings specific to sbt-vite are:
 
 ```sbt
+viteOtherSources ++= Seq(
+	Location.FromProject(file("src/main/javascript")),
+	Location.FromProject(file("src/main/entrypoint")),
+	Location.FromProject(file("src/main/styles")),
+)
+
 viteDependencyManagement := DependencyManagement.Manual
 ```
+
+Note that we include `viteOtherSources` only to let sbt-vite know which directories 
+to watch. If any files in any of the above directories change, sbt-vite will update 
+the build, even if none of our Scala.js sources change.
 
 ## Dependency resolution
 

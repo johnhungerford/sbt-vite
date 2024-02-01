@@ -41,9 +41,11 @@ dependencies are managed entirely behind the scenes.
 The settings specific to sbt-vite are as follows:
 
 ```sbt
-viteOtherSources += Location.FromProject(file("src/main/javascript"))
-viteOtherSources += Location.FromProject(file("src/main/entrypoint"))
-viteOtherSources += Location.FromProject(file("src/main/styles"))
+viteOtherSources ++= Seq(
+	Location.FromProject(file("src/main/javascript")),
+	Location.FromProject(file("src/main/entrypoint")),
+	Location.FromProject(file("src/main/styles")),
+)
 
 npmDependencies ++= Seq(
 	"react" -> "^18.2.0",

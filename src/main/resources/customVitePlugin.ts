@@ -15,14 +15,11 @@ export default function scalaJSPlugin(scalaJSOutputDir: string): VitePlugin {
         // standard Rollup
         resolveId(source, importer, options) {
             if (source === scalaJsSourcePrefix) {
-                console.log('Source IS prefix! ' + source)
                 return `${scalaJSOutputDir}/main.js`;
             } else if (source.startsWith(scalaJsSourcePrefix)) {
-                console.log('Source STARTS WITH prefix! ' + source)
                 const path = source.substring(scalaJsSourcePrefix.length);
                 return `${scalaJSOutputDir}/${path}`
             } else {
-                console.log('Other source! ' + source)
                 return null;
             }
         },

@@ -3,7 +3,7 @@ package sbtvite.sbtplugin
 import org.scalajs.jsenv.Input
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.*
-import sbt.*
+import sbt.{Glob, *}
 import sbt.Keys.*
 import sbt.nio.Keys.*
 import sbtvite.{NpmExecutor, NpmNpmExecutor, SourceInjector, ViteConfigGen}
@@ -171,7 +171,7 @@ object SbtVitePlugin extends AutoPlugin {
 		 *
 		 * `import '/index.css';` (for JS)
 		 */
-		val viteOtherSources = settingKey[Set[Location]](
+		val viteOtherSources = settingKey[Seq[Location]](
 			"Locations of non-scala sources for \"managed\" dependency management",
 		)
 
@@ -560,7 +560,7 @@ object SbtVitePlugin extends AutoPlugin {
 		viteUseExistingConfig := false,
 
 		viteProdConfigSources := Nil,
-		viteOtherSources := Set.empty,
+		viteOtherSources := Nil,
 
 		npmDependencies := Nil,
 		npmDevDependencies :=
@@ -1046,9 +1046,15 @@ object SbtVitePlugin extends AutoPlugin {
 			  Test / fastLinkJS,
 		  ).value,
 
-		viteBuildProd / fileInputs ++= Seq(
-			viteProdExecutionDirectory.value.absolutePath.stripSuffix("/") + "/**",
-		),
+		viteBuildProd / fileInputs ++=
+		  Seq(
+			  Glob(viteProdTargetDirectory.value.absolutePath.stripSuffix("/") + "/**"),
+			  Glob(viteProdScalajsEntrypoint.value.getParentFile.absolutePath.stripSuffix("/") + "/**"),
+		  ) ++
+			viteOtherSources.value.map(v => Glob(v.resolve(file("."), baseDirectory.value).toPath.toString.stripSuffix("/") + "/**")),
+
+		viteBuildProd / fileInputExcludeFilter :=
+		  Glob(viteProdBundleDirectory.value.toPath.toString + "/**"),
 
 		viteBuildProd := {
 			// Only bundle if there is a new configuration, there are new test compilation outputs
@@ -1056,12 +1062,8 @@ object SbtVitePlugin extends AutoPlugin {
 			if ( {
 				viteBuildProd.inputFileChanges.hasChanges
 			} || {
-				Try(IO
-				  .read(
-					  viteProdBundleLocation.value
-						.resolve(file("."), baseDirectory.value)
-				  ),
-				).isFailure
+				!Try(IO.listFiles(viteProdBundleDirectory.value).nonEmpty)
+				  .toOption.exists(identity)
 			}) {
 				val configPath = viteProdConfigLocation
 				  .value
@@ -1121,9 +1123,18 @@ object SbtVitePlugin extends AutoPlugin {
 		  )
 		  .value,
 
-		viteBuildDev / fileInputs ++= Seq(
-			viteDevExecutionDirectory.value.absolutePath.stripSuffix("/") + "/**",
-		),
+		viteBuildDev / fileInputs ++=
+			Seq(
+				Glob(viteDevTargetDirectory.value.absolutePath.stripSuffix("/") + "/**"),
+				Glob(viteDevScalajsEntrypoint.value.getParentFile.absolutePath.stripSuffix("/") + "/**"),
+			) ++
+			  viteOtherSources.value.map(v => Glob(v.resolve(file("."), baseDirectory.value).toPath.toString.stripSuffix("/") + "/**")),
+
+		viteBuildDev / fileInputExcludeFilter :=
+		  Glob.stringToGlob(viteTestScalajsEntrypoint.value.getParentFile.toPath.toString.stripSuffix("/") + "/**")
+		  	|| Glob.stringToGlob(viteTestConfigFile.value.toPath.toString)
+			|| Glob(viteDevBundleDirectory.value.toPath.toString.stripSuffix("/") + "/**")
+			|| Glob(viteTestBundleEntrypoint.value.toPath.getParent.toString.stripSuffix("/") + "/**"),
 
 		viteBuildDev := {
 			// Only bundle if there is a new configuration, there are new test compilation outputs
@@ -1131,12 +1142,8 @@ object SbtVitePlugin extends AutoPlugin {
 			if ( {
 				viteBuildDev.inputFileChanges.hasChanges
 			} || {
-				Try(IO
-				  .read(
-					  viteDevBundleLocation.value
-						.resolve(file("."), baseDirectory.value)
-				  ),
-				).isFailure
+				!Try(IO.listFiles(viteDevBundleDirectory.value).nonEmpty)
+				  .toOption.exists(identity)
 			}) {
 				val configPath = viteDevConfigLocation
 				  .value
@@ -1197,16 +1204,21 @@ object SbtVitePlugin extends AutoPlugin {
 		  .value,
 
 		viteBuildTest / fileInputs := {
-			(viteBuildDev / fileInputs).value
+			Glob(viteDevTargetDirectory.value.toPath.toString.stripSuffix("/") + "/**") +:
+			  viteOtherSources.value.map(v => Glob(v.resolve(file("."), baseDirectory.value).toPath.toString))
 		},
+
+		viteBuildTest / fileInputExcludeFilter :=
+		  Glob(viteDevConfigLocation.value.resolve(file("."), baseDirectory.value).toPath.toString)
+			|| Glob(viteDevBundleDirectory.value.toPath.toString.stripSuffix("/") + "/**")
+		  	|| Glob(viteTestBundleEntrypoint.value.toPath.getParent.toString.stripSuffix("/") + "/**"),
 
 		viteBuildTest := {
 			if ( {
 				viteBuildTest.inputFileChanges.hasChanges
 			} || {
-				Try(IO
-				  .read(viteTestBundleEntrypoint.value),
-				).isFailure
+				!Try(IO.listFiles(viteTestBundleEntrypoint.value.getParentFile).nonEmpty)
+				  .toOption.exists(identity)
 			}) {
 				val configPath = viteTestConfigFile
 				  .value
